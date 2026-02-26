@@ -1,5 +1,7 @@
 # ── Stage 1: build ────────────────────────────────────────────────────
 FROM node:22-alpine AS build
+# Patch OS-level packages to eliminate Alpine CVEs
+RUN apk upgrade --no-cache
 WORKDIR /app
 
 # Install dependencies (leverage cache)
@@ -12,6 +14,8 @@ RUN npm run build
 
 # ── Stage 2: serve with Nginx ─────────────────────────────────────────
 FROM nginx:1.27-alpine AS runtime
+# Patch OS-level packages to eliminate Alpine CVEs
+RUN apk upgrade --no-cache
 COPY --from=build /app/dist /usr/share/nginx/html
 
 # Custom Nginx config: HTML5 history API + gzip + security headers
