@@ -1,0 +1,6 @@
+@SrmCreditEngine.API_HostAddress = http://localhost:5229
+
+GET {{SrmCreditEngine.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

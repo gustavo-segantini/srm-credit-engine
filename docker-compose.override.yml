@@ -1,0 +1,38 @@
+# =====================================================================
+# docker-compose.override.yml — Local development overrides
+# Automatically merged by: docker compose up
+# Enables: hot-reload, verbose logging, relaxed security
+# =====================================================================
+
+services:
+
+  api:
+    build:
+      target: build        # stop at build stage to include SDK tools
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: >-
+        Host=postgres;Port=5432;Database=srm_credit_engine;
+        Username=srm_user;Password=srm_pass;Include Error Detail=true
+      Serilog__MinimumLevel__Default: Debug
+      Serilog__WriteTo__1__Args__serverUrl: http://seq:5341
+    volumes:
+      - ./apps/backend:/src   # bind-mount for faster iteration
+    ports:
+      - "8080:8080"
+      - "8081:8081"           # HTTPS dev cert if needed
+
+  frontend:
+    # In dev, prefer 'npm run dev' directly (Vite HMR).
+    # This service is kept for full-stack Docker testing.
+    environment:
+      VITE_API_BASE_URL: http://localhost:8080
+
+  postgres:
+    ports:
+      - "5433:5432"          # expose to host for DB tools (DBeaver, etc.)
+
+  seq:
+    ports:
+      - "5341:5341"
+      - "8090:80"

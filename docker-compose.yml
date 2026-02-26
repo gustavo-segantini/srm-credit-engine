@@ -1,0 +1,124 @@
+# =====================================================================
+# docker-compose.yml — Production-like compose for SRM Credit Engine
+# Usage: docker compose up -d
+# Override with docker-compose.override.yml for local dev
+# =====================================================================
+
+services:
+
+  # ── PostgreSQL ────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: srm_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: srm_credit_engine
+      POSTGRES_USER: srm_user
+      POSTGRES_PASSWORD: srm_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U srm_user -d srm_credit_engine"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - srm_net
+
+  # ── Seq (structured log viewer) ───────────────────────────────────
+  seq:
+    image: datalust/seq:latest
+    container_name: srm_seq
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      SEQ_FIRSTRUN_NOAUTHENTICATION: "true"
+    ports:
+      - "5341:5341"   # ingestion
+      - "8090:80"     # web UI
+    volumes:
+      - seq_data:/data
+    networks:
+      - srm_net
+
+  # ── Backend API ───────────────────────────────────────────────────
+  api:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    container_name: srm_api
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: >-
+        Host=postgres;Port=5432;Database=srm_credit_engine;
+        Username=srm_user;Password=srm_pass
+      Serilog__WriteTo__1__Args__serverUrl: http://seq:5341
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - srm_net
+
+  # ── Frontend SPA ──────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+    container_name: srm_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    networks:
+      - srm_net
+
+  # ── Prometheus ────────────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: srm_prometheus
+    restart: unless-stopped
+    volumes:
+      - ./infra/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    networks:
+      - srm_net
+
+  # ── Grafana ───────────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: srm_grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infra/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - srm_net
+
+volumes:
+  postgres_data:
+  seq_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  srm_net:
+    driver: bridge
