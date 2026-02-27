@@ -91,6 +91,10 @@ desktop.ini
 # ── Local build output ────────────────────────────────────────────────
 .build/
 
+# ── Test coverage output ──────────────────────────────────────────────
+apps/frontend/coverage/
+apps/backend/TestResults/
+
 # ── Playwright / browser automation artifacts ─────────────────────────
 .playwright-mcp/
 *.png
