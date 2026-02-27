@@ -1,0 +1,1 @@
+dotnet test apps/backend/tests/SrmCreditEngine.UnitTests --no-build -c Release -q

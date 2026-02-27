@@ -1,0 +1,15 @@
+{
+  "name": "srm-credit-engine",
+  "private": true,
+  "version": "1.0.0",
+  "description": "SRM Credit Engine — monorepo root (tooling only)",
+  "scripts": {
+    "prepare": "husky",
+    "lint:frontend": "npm --prefix apps/frontend run lint",
+    "test:backend": "dotnet test apps/backend/tests/SrmCreditEngine.UnitTests --no-build -c Release -q"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.0"
+  }
+}
