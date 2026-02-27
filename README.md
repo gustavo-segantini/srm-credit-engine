@@ -3,7 +3,7 @@
 Plataforma de crédito multi-moeda para cessão de recebíveis, desenvolvida como implementação de nível **Expert/Staff/Principal** do case de engenharia SRM.
 
 [![CI](https://github.com/your-org/srm-credit-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/srm-credit-engine/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-38%2F38-brightgreen)](apps/backend/tests)
+[![Tests](https://img.shields.io/badge/tests-53%2F53-brightgreen)](apps/backend/tests)
 [![.NET](https://img.shields.io/badge/.NET-10.0-512BD4)](https://dotnet.microsoft.com)
 [![React](https://img.shields.io/badge/React-19-61DAFB)](https://react.dev)
 
@@ -126,7 +126,7 @@ dotnet ef database update \
 dotnet watch run --project src/SrmCreditEngine.API
 ```
 
-API: `http://localhost:8080` | Docs: `http://localhost:8080/scalar`
+API: `http://localhost:5229` | Docs: `http://localhost:5229/scalar`
 
 ### Frontend
 
@@ -136,7 +136,7 @@ npm install
 npm run dev
 ```
 
-Frontend: `http://localhost:5173` (proxy `/api` → `localhost:8080` configurado em `vite.config.ts`)
+Frontend: `http://localhost:5173` (proxy `/api` → `localhost:5229` configurado em `vite.config.ts`)
 
 ---
 
@@ -144,15 +144,21 @@ Frontend: `http://localhost:5173` (proxy `/api` → `localhost:8080` configurado
 
 Base URL: `http://localhost:8080/api/v1`
 
-| Método | Endpoint                      | Descrição                    |
-|--------|-------------------------------|------------------------------|
-| POST   | `/pricing/simulate`           | Simula precificação (PV)     |
-| GET    | `/settlements`                | Lista liquidações (paginado) |
-| POST   | `/settlements`                | Confirma liquidação          |
-| GET    | `/settlements/{id}`           | Detalhe de liquidação        |
-| GET    | `/exchange-rates/{from}/{to}` | Cotação atual                |
-| PUT    | `/exchange-rates`             | Atualiza cotação             |
-| GET    | `/reports/statement`          | Extrato consolidado          |
+| Método | Endpoint                             | Auth | Descrição                    |
+|--------|--------------------------------------|------|------------------------------|
+| POST   | `/auth/token`                        | —    | Obtém JWT Bearer token       |
+| POST   | `/cedents`                           | ✅   | Cadastra cedente             |
+| GET    | `/cedents`                           | —    | Lista cedentes               |
+| GET    | `/cedents/{id}`                      | —    | Detalhe do cedente           |
+| PUT    | `/cedents/{id}`                      | ✅   | Atualiza cedente             |
+| DELETE | `/cedents/{id}`                      | ✅   | Desativa cedente             |
+| POST   | `/pricing/simulate`                  | —    | Simula precificação (PV)     |
+| GET    | `/settlements`                       | —    | Lista liquidações (paginado) |
+| POST   | `/settlements`                       | ✅   | Confirma liquidação          |
+| GET    | `/settlements/{id}`                  | —    | Detalhe de liquidação        |
+| GET    | `/exchange-rates/{from}/{to}`        | —    | Cotação atual                |
+| PUT    | `/exchange-rates`                    | ✅   | Atualiza cotação             |
+| GET    | `/reports/settlement-statement`      | —    | Extrato consolidado          |
 
 Documentação interativa: `http://localhost:8080/scalar`
 
@@ -160,7 +166,9 @@ Documentação interativa: `http://localhost:8080/scalar`
 
 ## Testes
 
-**38/38 testes unitários passando:**
+**53/53 testes passando:**
+
+### Backend — Unitários (38)
 
 | Suite                     | Testes | Cobertura                             |
 |---------------------------|--------|---------------------------------------|
@@ -173,6 +181,42 @@ Documentação interativa: `http://localhost:8080/scalar`
 cd apps/backend
 dotnet test tests/SrmCreditEngine.UnitTests
 # Passed! - Failed: 0, Passed: 38, Skipped: 0
+```
+
+### Backend — Integração (9)
+
+Usam **Testcontainers** (PostgreSQL real, sem mocks) e `WebApplicationFactory`.
+
+| Suite                        | Testes | Cobertura                                        |
+|------------------------------|--------|--------------------------------------------------|
+| `AuthEndpointTests`          | 2      | Token válido / credenciais inválidas             |
+| `PricingEndpointTests`       | 2      | Simulate correto / dueDate no passado            |
+| `SettlementsEndpointTests`   | 5      | Criar / obter / sem token 401 / duplicata 409    |
+
+```bash
+cd apps/backend
+dotnet test tests/SrmCreditEngine.IntegrationTests
+# Passed! - Failed: 0, Passed: 9, Skipped: 0
+```
+
+### Frontend — Vitest (6)
+
+Testa a página de Cedentes com `@testing-library/react`.
+
+```bash
+cd apps/frontend
+npm test
+# Test Files: 1 passed | Tests: 6 passed
+```
+
+### Todos os testes de uma vez
+
+```bash
+# Backend (unit + integration)
+cd apps/backend && dotnet test
+
+# Frontend
+cd apps/frontend && npm test
 ```
 
 ---
@@ -339,8 +383,10 @@ b1914ea  chore: add frontend-level Husky symlink
 ### Tags Semânticas
 
 ```bash
-v1.0.0  ← entrega inicial (feat completo: pricing engine, settlements, frontend)
-v1.1.0  ← pós-rewrite: JWT, Polly, CRUD Cedentes, Testcontainers, Vitest
+v1.0.0  ← entrega inicial (pricing engine, settlements, frontend)
+v1.0.1  ← hotfix: guard contra prazo ≤ 0 em ChequePredatado (cherry-pick para release/v1.0.x)
+v1.1.0  ← JWT, Polly, CRUD Cedentes, Testcontainers, Vitest
+v1.2.0  ← IaC (Kubernetes/Kustomize), critérios de aceite (24 ACs BDD)
 ```
 
 ---
@@ -375,6 +421,18 @@ Definidos em [`docs/acceptance-criteria.md`](docs/acceptance-criteria.md) — 24
 | **Desempenho** | AC-14 – AC-17 | P95 < 100 ms, Dapper 100 k linhas < 500 ms, FCP < 1,5 s, health check < 50 ms |
 | **Escalabilidade** | AC-18 – AC-21 | Backend stateless, partition pruning, HPA K8s (ref: `backend-hpa.yaml`), circuit breaker |
 | **Rastreabilidade** | AC-22 – AC-24 | Structured logs (Seq), audit trail, versionamento semântico |
+
+---
+
+## Ferramentas Recomendadas (VS Code)
+
+Os diagramas neste repositório usam a sintaxe **Mermaid** (arquivos `.md` em `docs/diagrams/` e `er-diagram.md`). Para visualizá-los diretamente no VS Code:
+
+1. Instale a extensão [Markdown Preview Mermaid Support](https://marketplace.visualstudio.com/items?itemName=bierner.markdown-mermaid)
+   ```
+   ext install bierner.markdown-mermaid
+   ```
+2. Abra qualquer `.md` com diagrama e pressione `Ctrl+Shift+V` para o preview renderizado.
 
 ---
 
