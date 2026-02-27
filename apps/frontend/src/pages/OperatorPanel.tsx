@@ -1,4 +1,4 @@
-import { useForm } from 'react-hook-form'
+import { useForm, type SubmitHandler } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { format } from 'date-fns'
@@ -11,7 +11,7 @@ const schema = z.object({
   cedentId:       z.string().uuid('Must be a valid UUID'),
   documentNumber: z.string().min(1, 'Required'),
   receivableType: z.enum(['DuplicataMercantil', 'ChequePredatado']),
-  faceValue:      z.coerce.number().positive('Must be positive'),
+  faceValue:      z.preprocess((v) => parseFloat(String(v)), z.number().positive('Must be positive')),
   faceCurrency:   z.enum(['BRL', 'USD']),
   dueDate:        z.string().min(1, 'Required'),
   paymentCurrency:z.enum(['BRL', 'USD']),
@@ -50,7 +50,7 @@ export default function OperatorPanel() {
   const watchedValues = watch()
 
   // ── Real-time simulation (debounce via TanStack Query mutation) ──────────
-  function onSimulate(data: FormValues) {
+  const onSimulate: SubmitHandler<FormValues> = (data) => {
     const req: SimulatePricingRequest = {
       faceValue:       data.faceValue,
       faceCurrency:    data.faceCurrency as CurrencyCode,
@@ -62,7 +62,7 @@ export default function OperatorPanel() {
   }
 
   // ── Confirm = create settlement ──────────────────────────────────────────
-  function onConfirm(data: FormValues) {
+  const onConfirm: SubmitHandler<FormValues> = (data) => {
     createSettl.mutate({
       cedentId:        data.cedentId,
       documentNumber:  data.documentNumber,
@@ -195,7 +195,7 @@ export default function OperatorPanel() {
             </dl>
 
             <button
-              onClick={handleSubmit(onConfirm)}
+              onClick={() => handleSubmit(onConfirm)()}
               disabled={isSaving}
               className="mt-6 w-full py-2 px-4 bg-green-600 hover:bg-green-700
                          disabled:bg-gray-300 text-white font-medium rounded-lg transition-colors"

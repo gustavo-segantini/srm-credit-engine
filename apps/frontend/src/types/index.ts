@@ -110,3 +110,24 @@ export interface PagedResult<T> {
   totalItems: number;
   totalPages: number;
 }
+
+// ── Cedents ───────────────────────────────────────────────────────────────────
+export interface CedentResponse {
+  id: string;
+  name: string;
+  cnpj: string;
+  contactEmail: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface CreateCedentRequest {
+  name: string;
+  cnpj: string;
+  contactEmail: string;
+}
+
+export interface UpdateCedentRequest {
+  name: string;
+  contactEmail: string;
+}

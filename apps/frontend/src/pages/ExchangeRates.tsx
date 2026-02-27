@@ -9,7 +9,7 @@ import { format } from 'date-fns'
 const schema = z.object({
   fromCurrency: z.enum(['BRL', 'USD']),
   toCurrency:   z.enum(['BRL', 'USD']),
-  rate:         z.coerce.number().positive('Rate must be positive'),
+  rate:         z.number().positive('Rate must be positive'),
   source:       z.string().optional(),
 })
 type FormValues = z.infer<typeof schema>
