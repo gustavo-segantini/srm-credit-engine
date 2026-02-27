@@ -20,8 +20,9 @@ public sealed class SettlementsEndpointTests : IClassFixture<SrmCreditEngineFact
     [Fact]
     public async Task CreateSettlement_WithoutToken_Returns401()
     {
-        // Arrange — no Authorization header
-        var body = await ValidSettlementBodyAsync();
+        // Arrange — no Authorization header; auth middleware fires before handler validation
+        // so we do NOT need a real cedent — a random Guid is sufficient.
+        var body = BuildSettlementBody(Guid.NewGuid(), $"DOC-{Guid.NewGuid():N}");
 
         // Act
         var response = await _client.PostAsJsonAsync("/api/v1/settlements", body);
@@ -105,7 +106,7 @@ public sealed class SettlementsEndpointTests : IClassFixture<SrmCreditEngineFact
 
         var response = await _client.PostAsJsonAsync("/api/v1/cedents", new
         {
-            name         = $"Cedente Teste {Guid.NewGuid():N[..8]}",
+            name         = $"Cedente Teste {Guid.NewGuid().ToString("N")[..8]}",
             cnpj,
             contactEmail = $"test-{Guid.NewGuid():N}@test.com",
         });

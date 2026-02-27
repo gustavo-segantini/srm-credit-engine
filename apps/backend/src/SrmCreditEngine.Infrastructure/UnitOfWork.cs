@@ -33,22 +33,28 @@ public sealed class UnitOfWork : IUnitOfWork
             return;
         }
 
-        _currentTransaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-        try
+        // NpgsqlRetryingExecutionStrategy requires all user-initiated transactions
+        // to be wrapped with CreateExecutionStrategy so retries work correctly.
+        var strategy = _dbContext.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
         {
-            await action();
-            await _currentTransaction.CommitAsync(cancellationToken);
-        }
-        catch
-        {
-            await _currentTransaction.RollbackAsync(cancellationToken);
-            throw;
-        }
-        finally
-        {
-            await _currentTransaction.DisposeAsync();
-            _currentTransaction = null;
-        }
+            _currentTransaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+            try
+            {
+                await action();
+                await _currentTransaction.CommitAsync(cancellationToken);
+            }
+            catch
+            {
+                await _currentTransaction.RollbackAsync(cancellationToken);
+                throw;
+            }
+            finally
+            {
+                await _currentTransaction.DisposeAsync();
+                _currentTransaction = null;
+            }
+        });
     }
 
     public void Dispose()

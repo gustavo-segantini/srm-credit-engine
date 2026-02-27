@@ -11,12 +11,21 @@ using SrmCreditEngine.API.Middleware;
 using SrmCreditEngine.Application.Extensions;
 using SrmCreditEngine.Infrastructure.Extensions;
 
-Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
-    .Enrich.FromLogContext()
-    .WriteTo.Console(outputTemplate:
-        "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext} {Message:lj}{NewLine}{Exception}")
-    .CreateBootstrapLogger();
+// Bootstrap logger — guard against re-entry when multiple WebApplicationFactory
+// instances start in parallel during integration tests (Serilog freezes on first assign).
+try
+{
+    Log.Logger = new LoggerConfiguration()
+        .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+        .Enrich.FromLogContext()
+        .WriteTo.Console(outputTemplate:
+            "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext} {Message:lj}{NewLine}{Exception}")
+        .CreateBootstrapLogger();
+}
+catch (InvalidOperationException)
+{
+    // Logger already frozen — another test factory started first; safe to continue.
+}
 
 try
 {

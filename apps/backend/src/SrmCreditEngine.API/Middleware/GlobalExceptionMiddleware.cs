@@ -36,6 +36,8 @@ public sealed class GlobalExceptionMiddleware
     {
         var (statusCode, code, message) = exception switch
         {
+            // Duplicate document conflicts map to 409; all other business rule violations map to 422
+            BusinessRuleViolationException { Code: "DUPLICATE_SETTLEMENT" } e => (HttpStatusCode.Conflict, e.Code, e.Message),
             BusinessRuleViolationException e => (HttpStatusCode.UnprocessableEntity, e.Code, e.Message),
             ExchangeRateNotFoundException e => (HttpStatusCode.NotFound, e.Code, e.Message),
             InvalidPricingException e => (HttpStatusCode.BadRequest, e.Code, e.Message),
