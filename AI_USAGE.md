@@ -43,11 +43,15 @@ Documento de transparência sobre o uso de ferramentas de IA durante o desenvolv
 
 ### Testes
 
-- Suite completa de 38 testes unitários cobrindo:
-  - `PricingDomainService` (11 casos)
-  - `Settlement` state machine (12 casos)
-  - `Money` value object (15 casos)
+- Suite completa de 47 testes passando cobrindo:
+  - `PricingStrategyTests` (11 unit)
+  - `Settlement` state machine (12 unit)
+  - `Money` value object (15 unit)
+  - `AuthEndpointTests` (2 integration)
+  - `PricingEndpointTests` (2 integration)
+  - `SettlementsEndpointTests` (5 integration)
 - Padrão AAA (Arrange, Act, Assert) com FluentAssertions + NSubstitute
+- 6 testes Vitest no frontend (Cedents page, `@testing-library/react`)
 
 ### Documentação
 
@@ -89,7 +93,7 @@ As seguintes decisões **não foram automaticamente geradas** — exigiram valid
 Todo código gerado foi:
 
 1. **Revisado manualmente** antes de integração
-2. **Compilado e testado** — `dotnet build` sem erros, `dotnet test` 47/47 passando (38 unit + 9 integration)
+2. **Compilado e testado** — `dotnet build` sem erros, `dotnet test` 47/47 passando (38 unit + 9 integration), `npm test` 6/6 Vitest passando — **53/53 no total**
 3. **Validado contra o case** — requisitos funcionais do `README_case_dev_srm.md` verificados linha a linha
 4. **Iterado quando incorreto** — ex: duplicate class em PricingStrategyTests detectado e corrigido manualmente
 
@@ -108,7 +112,7 @@ Todo código gerado foi:
 | Scaffolding + boilerplate     | 4h                | 30min     | 8x         |
 | Implementação domain layer    | 6h                | 1,5h      | 4x         |
 | Implementação infra layer     | 8h                | 2h        | 4x         |
-| Testes unitários (38)         | 6h                | 1h        | 6x         |
+| Testes unitários (38) + integração (9) + Vitest (6) | 10h          | 1,5h      | 6x         |
 | Documentação (ADRs + C4)      | 4h                | 45min     | 5x         |
 | **Total estimado**            | **~28h**          | **~6h**   | **~4,5x**  |
 

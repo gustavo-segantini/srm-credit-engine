@@ -41,15 +41,12 @@ PV = FV / (1 + r)^n
 
 `r = taxa_base + spread_tipo` (mensal) · `n` = prazo em meses
 
-**Spreads por tipo de recebível:**
+**Spreads por tipo de recebível (alinhados ao case):**
 
-| Tipo       | Spread | Risco         |
-|------------|--------|---------------|
-| Cheque     | 3,5%   | Alto          |
-| Duplicata  | 2,5%   | Médio         |
-| Debenture  | 1,8%   | Médio-Baixo   |
-| CRI        | 1,2%   | Baixo         |
-| CRA        | 1,0%   | Baixo         |
+| Tipo                  | Spread | Risco  |
+|-----------------------|--------|--------|
+| Cheque Pré-datado     | 2,5%   | Alto   |
+| Duplicata Mercantil   | 1,5%   | Médio  |
 
 ---
 
@@ -88,15 +85,15 @@ docker compose up -d
 
 **Serviços disponíveis:**
 
-| Serviço       | URL                          | Credenciais   |
-|---------------|------------------------------|---------------|
-| Frontend      | http://localhost:3000        | —             |
-| API / Scalar  | http://localhost:8080/scalar | —             |
-| Health Check  | http://localhost:8080/health | —             |
-| Seq (Logs)    | http://localhost:5341        | —             |
-| Grafana       | http://localhost:3001        | admin / admin |
-| Prometheus    | http://localhost:9090        | —             |
-| PostgreSQL    | localhost:5432               | srm / srm123! |
+| Serviço       | URL                          | Credenciais              |
+|---------------|------------------------------|--------------------------|
+| Frontend      | http://localhost:3000        | —                        |
+| API / Scalar  | http://localhost:8080/scalar | —                        |
+| Health Check  | http://localhost:8080/health | —                        |
+| Seq (Logs UI) | http://localhost:8090        | —                        |
+| Grafana       | http://localhost:3001        | admin / admin            |
+| Prometheus    | http://localhost:9090        | —                        |
+| PostgreSQL    | localhost:5433               | srm_user / srm_pass      |
 
 ```bash
 docker compose down -v   # para e remove volumes

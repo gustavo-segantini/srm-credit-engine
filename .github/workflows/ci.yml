@@ -97,6 +97,10 @@ jobs:
         working-directory: apps/frontend
         run: npm run lint
 
+      - name: Unit Tests (Vitest)
+        working-directory: apps/frontend
+        run: npm test
+
   # ──────────────────────────────────────────────────────────────────────────
   # Job 3: Docker build validation (does NOT push — triggered on main only)
   # ──────────────────────────────────────────────────────────────────────────
