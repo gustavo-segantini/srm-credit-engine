@@ -20,6 +20,7 @@ public static class ApplicationServiceExtensions
         services.AddScoped<IPricingService, PricingService>();
         services.AddScoped<ICurrencyService, CurrencyService>();
         services.AddScoped<ISettlementService, SettlementService>();
+        services.AddScoped<ICedentService, CedentService>();
 
         // Register FluentValidation validators from this assembly
         services.AddValidatorsFromAssembly(typeof(ApplicationServiceExtensions).Assembly);
