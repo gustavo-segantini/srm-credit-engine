@@ -8,6 +8,9 @@ import type {
   ExchangeRateResponse,
   SettlementStatementResponse,
   CurrencyCode,
+  CedentResponse,
+  CreateCedentRequest,
+  UpdateCedentRequest,
 } from '../types'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
@@ -75,4 +78,22 @@ export const currencyApi = {
     apiClient
       .put<ExchangeRateResponse>('/currency/exchange-rates', req)
       .then((r) => r.data),
+}
+
+// ── Cedents ────────────────────────────────────────────────────────────────
+export const cedentsApi = {
+  getAll: () =>
+    apiClient.get<CedentResponse[]>('/cedents').then((r) => r.data),
+
+  getById: (id: string) =>
+    apiClient.get<CedentResponse>(/cedents/).then((r) => r.data),
+
+  create: (req: CreateCedentRequest) =>
+    apiClient.post<CedentResponse>('/cedents', req).then((r) => r.data),
+
+  update: (id: string, req: UpdateCedentRequest) =>
+    apiClient.put<CedentResponse>(/cedents/, req).then((r) => r.data),
+
+  deactivate: (id: string) =>
+    apiClient.delete(/cedents/).then((r) => r.data),
 }

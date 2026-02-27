@@ -6,6 +6,7 @@ import Layout from './components/Layout'
 const OperatorPanel  = lazy(() => import('./pages/OperatorPanel'))
 const TransactionGrid = lazy(() => import('./pages/TransactionGrid'))
 const ExchangeRates   = lazy(() => import('./pages/ExchangeRates'))
+const Cedents         = lazy(() => import('./pages/Cedents'))
 
 function PageLoader() {
   return (
@@ -40,6 +41,14 @@ export default function App() {
           element={
             <Suspense fallback={<PageLoader />}>
               <ExchangeRates />
+            </Suspense>
+          }
+        />
+        <Route
+          path="cedents"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <Cedents />
             </Suspense>
           }
         />

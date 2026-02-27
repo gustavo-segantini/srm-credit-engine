@@ -5,6 +5,7 @@ const nav = [
   { to: '/',             label: 'Simulator'     },
   { to: '/transactions', label: 'Transactions'  },
   { to: '/rates',        label: 'Exchange Rates' },
+  { to: '/cedents',      label: 'Cedents'       },
 ]
 
 export default function Layout() {
