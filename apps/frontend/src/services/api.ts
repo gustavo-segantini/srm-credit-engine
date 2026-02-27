@@ -24,10 +24,41 @@ export const apiClient = axios.create({
   timeout: 15_000,
 })
 
+// ── Token management ───────────────────────────────────────────────────────
+let _accessToken: string | null = null
+
+async function fetchToken(): Promise<string> {
+  const res = await axios.post<{ accessToken: string }>(
+    `${BASE_URL}/api/v1/auth/token`,
+    { username: 'operator' },
+  )
+  _accessToken = res.data.accessToken
+  return _accessToken
+}
+
+async function getToken(): Promise<string> {
+  if (!_accessToken) await fetchToken()
+  return _accessToken!
+}
+
+// ── Request interceptor: attach Bearer token ───────────────────────────────
+apiClient.interceptors.request.use(async (config) => {
+  const token = await getToken()
+  config.headers.Authorization = `Bearer ${token}`
+  return config
+})
+
 // ── Response interceptor: rethrow with message from Problem Details ────────
 apiClient.interceptors.response.use(
   (res) => res,
-  (error: AxiosError<{ title?: string; detail?: string }>) => {
+  async (error: AxiosError<{ title?: string; detail?: string }>) => {
+    // On 401 refresh token once and retry
+    if (error.response?.status === 401 && !((error.config as any)._retry)) {
+      ;(error.config as any)._retry = true
+      await fetchToken()
+      error.config!.headers.Authorization = `Bearer ${_accessToken}`
+      return apiClient(error.config!)
+    }
     const detail = error.response?.data?.detail ?? error.response?.data?.title
     return Promise.reject(new Error(detail ?? error.message))
   },
@@ -86,14 +117,14 @@ export const cedentsApi = {
     apiClient.get<CedentResponse[]>('/cedents').then((r) => r.data),
 
   getById: (id: string) =>
-    apiClient.get<CedentResponse>(/cedents/).then((r) => r.data),
+    apiClient.get<CedentResponse>(`/cedents/${id}`).then((r) => r.data),
 
   create: (req: CreateCedentRequest) =>
     apiClient.post<CedentResponse>('/cedents', req).then((r) => r.data),
 
   update: (id: string, req: UpdateCedentRequest) =>
-    apiClient.put<CedentResponse>(/cedents/, req).then((r) => r.data),
+    apiClient.put<CedentResponse>(`/cedents/${id}`, req).then((r) => r.data),
 
   deactivate: (id: string) =>
-    apiClient.delete(/cedents/).then((r) => r.data),
+    apiClient.delete(`/cedents/${id}`).then((r) => r.data),
 }
