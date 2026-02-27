@@ -16,7 +16,7 @@ env:
 
 jobs:
   # ──────────────────────────────────────────────────────────────────────────
-  # Job 1: Backend — build + lint + unit tests
+  # Job 1: Backend — build + lint + unit tests + integration tests
   # ──────────────────────────────────────────────────────────────────────────
   backend:
     name: Backend (.NET 10)
@@ -57,14 +57,24 @@ jobs:
           tests/SrmCreditEngine.UnitTests
           --no-build -c Release
           --logger "trx;LogFileName=unit-tests.trx"
-          --results-directory ./TestResults
+          --results-directory ./TestResults/unit
           --collect "XPlat Code Coverage"
+
+      - name: Integration Tests
+        working-directory: apps/backend
+        # Testcontainers spins up a real PostgreSQL container — Docker is available on ubuntu-latest
+        run: >
+          dotnet test
+          tests/SrmCreditEngine.IntegrationTests
+          --no-build -c Release
+          --logger "trx;LogFileName=integration-tests.trx"
+          --results-directory ./TestResults/integration
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: unit-test-results
+          name: backend-test-results
           path: apps/backend/TestResults/
 
   # ──────────────────────────────────────────────────────────────────────────
@@ -100,6 +110,17 @@ jobs:
       - name: Unit Tests (Vitest)
         working-directory: apps/frontend
         run: npm test
+
+      - name: Coverage (Vitest)
+        working-directory: apps/frontend
+        run: npm run test:coverage
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: apps/frontend/coverage/
 
   # ──────────────────────────────────────────────────────────────────────────
   # Job 3: Docker build validation (does NOT push — triggered on main only)
