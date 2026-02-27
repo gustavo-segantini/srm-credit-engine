@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SrmCreditEngine.Application.DTOs.Requests;
 using SrmCreditEngine.Application.Services;
@@ -21,6 +22,7 @@ public sealed class ReportsController : ControllerBase
     /// Returns a paginated settlement statement filtered by period, cedent and currency.
     /// Powered by Dapper with raw SQL for high-performance analytics.
     /// </summary>
+    [Authorize]
     [HttpGet("settlement-statement")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetSettlementStatement(

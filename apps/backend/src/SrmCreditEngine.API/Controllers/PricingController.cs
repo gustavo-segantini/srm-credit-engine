@@ -1,5 +1,7 @@
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using SrmCreditEngine.Application.DTOs.Requests;
 using SrmCreditEngine.Application.Services;
 
@@ -25,6 +27,8 @@ public sealed class PricingController : ControllerBase
     /// Simulates the pricing of a receivable without persisting.
     /// Used by the operator panel for real-time preview.
     /// </summary>
+    [Authorize]
+    [EnableRateLimiting("pricing")]
     [HttpPost("simulate")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

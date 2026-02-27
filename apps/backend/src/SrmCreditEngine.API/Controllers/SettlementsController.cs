@@ -1,4 +1,5 @@
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SrmCreditEngine.Application.DTOs.Requests;
 using SrmCreditEngine.Application.Services;
@@ -25,6 +26,7 @@ public sealed class SettlementsController : ControllerBase
     /// Prices and settles a receivable in a single atomic operation.
     /// Idempotent per (cedentId, documentNumber) pair.
     /// </summary>
+    [Authorize]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
