@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, Fragment } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -163,8 +163,8 @@ export default function Cedents() {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {cedents.map((c) => (
-                <>
-                  <tr key={c.id} className="hover:bg-gray-50 transition-colors">
+                <Fragment key={c.id}>
+                  <tr className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
                     <td className="px-4 py-3 font-mono text-gray-600">{c.cnpj}</td>
                     <td className="px-4 py-3 text-gray-600">{c.contactEmail}</td>
@@ -234,7 +234,7 @@ export default function Cedents() {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               ))}
             </tbody>
           </table>

@@ -216,6 +216,40 @@ cd apps/backend && dotnet test
 cd apps/frontend && npm test
 ```
 
+### Cobertura de Código
+
+```bash
+# Backend — gera coverage.cobertura.xml em TestResults/unit/
+cd apps/backend
+dotnet test tests/SrmCreditEngine.UnitTests \
+  --collect "XPlat Code Coverage" \
+  --results-directory ./TestResults/unit
+
+# Frontend — relatório em coverage/ (texto + lcov + html)
+cd apps/frontend
+npm run test:coverage
+```
+
+**Resultados atuais (medidos após build limpo):**
+
+| Projeto | Escopo medido | Statements | Branches | Linhas |
+|---|---|---|---|---|
+| `SrmCreditEngine.Domain` | regras de negócio | — | — | **50,7%** |
+| `SrmCreditEngine.Application` | use cases / strategies | — | — | 6,0% |
+| **Backend total (solução)** | todas as camadas | — | **14,6%** | **21,8%** |
+| `Cedents.tsx` | CRUD de cedentes | **54,5%** | **64,7%** | **56,3%** |
+| **Frontend total** | todos os arquivos | 9,2% | 16,5% | 10,5% |
+
+**Por que os totais parecem baixos?**
+
+A estratégia de testes adotada é o **[Testing Trophy](https://kentcdodds.com/blog/the-testing-trophy-and-testing-classifications)** — cobertura concentrada onde o risco de negócio é maior:
+
+- **Domain 50,7% de linhas** — cobre 100% das invariantes financeiras (`PricingStrategy`, `Settlement` state machine, `Money`). O restante são getters/ctors que não carregam lógica.
+- **Application 6%** — os use cases são testados de ponta a ponta pelos 9 testes de integração (Testcontainers + WebApplicationFactory), que exercem camadas reais (banco, validação, middleware). Mockar tudo de novo em testes unitários seria duplicação sem valor.
+- **Frontend 9,2% total / 54,5% em Cedents** — apenas a página de Cedentes tem testes de componente. As demais páginas (`SimulatorPanel`, `TransactionGrid`, `ExchangeRates`) foram verificadas via smoke test manual com a aplicação rodando, por serem fortemente acopladas a chamadas HTTP que exigiriam mocks completos da API para testes de componente.
+
+Para atingir coberturas altas artificialmente sem aumentar a confiança real nos testes, seria necessário testar getters triviais e mocks de mocks — prática geralmente considerada anti-padrão em projetos financeiros onde o custo de manutenção dos testes supera o benefício.
+
 ---
 
 ## Infraestrutura & Observabilidade
