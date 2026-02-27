@@ -1,3 +1,8 @@
+using System.Text;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.IdentityModel.Tokens;
 using Prometheus;
 using Scalar.AspNetCore;
 using Serilog;
@@ -58,10 +63,73 @@ try
         {
             policy.WithOrigins(
                     builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
-                    ?? ["http://localhost:5173"])
+                        ?? ["http://localhost:5173"])
                 .AllowAnyHeader()
                 .AllowAnyMethod();
         });
+    });
+
+    // ---------- JWT Authentication ----------
+    var jwtSettings = builder.Configuration.GetSection("Jwt");
+    var secretKey = jwtSettings["SecretKey"] ?? "CHANGE-ME-IN-PRODUCTION-min-32-chars-secret";
+
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = jwtSettings["Issuer"],
+                ValidAudience = jwtSettings["Audience"],
+                IssuerSigningKey = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(secretKey)),
+                ClockSkew = TimeSpan.FromSeconds(30),
+            };
+
+            options.Events = new JwtBearerEvents
+            {
+                OnAuthenticationFailed = ctx =>
+                {
+                    Log.Warning("JWT authentication failed: {Error}", ctx.Exception.Message);
+                    return Task.CompletedTask;
+                }
+            };
+        });
+
+    builder.Services.AddAuthorization();
+
+    // ---------- Rate Limiting ----------
+    builder.Services.AddRateLimiter(limiter =>
+    {
+        // Default API policy: 100 requests per minute per IP
+        limiter.AddFixedWindowLimiter("api", options =>
+        {
+            options.PermitLimit = 100;
+            options.Window = TimeSpan.FromMinutes(1);
+            options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+            options.QueueLimit = 5;
+        });
+
+        // Stricter for pricing simulations: 30 requests per minute per IP
+        limiter.AddFixedWindowLimiter("pricing", options =>
+        {
+            options.PermitLimit = 30;
+            options.Window = TimeSpan.FromMinutes(1);
+            options.QueueLimit = 2;
+        });
+
+        // Respond with 429 Too Many Requests
+        limiter.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+        limiter.OnRejected = (ctx, token) =>
+        {
+            Log.Warning("Rate limit exceeded: {Path} from {IP}",
+                ctx.HttpContext.Request.Path,
+                ctx.HttpContext.Connection.RemoteIpAddress);
+            return ValueTask.CompletedTask;
+        };
     });
 
     // ---------- Health Checks ----------
@@ -93,9 +161,13 @@ try
     }
 
     app.UseCors("Frontend");
+    app.UseRateLimiter();
+    app.UseAuthentication();
+    app.UseAuthorization();
     app.UseHttpMetrics();  // Prometheus metrics
-    app.MapControllers();
-    app.MapMetrics("/metrics");  // Prometheus scrape endpoint
+
+    app.MapControllers().RequireRateLimiting("api");
+    app.MapMetrics("/metrics");
     app.MapHealthChecks("/health");
 
     // Auto-migrate database on startup
@@ -111,8 +183,4 @@ catch (Exception ex) when (ex is not HostAbortedException)
 finally
 {
     await Log.CloseAndFlushAsync();
-}
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
 }
