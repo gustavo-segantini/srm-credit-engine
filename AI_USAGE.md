@@ -95,9 +95,9 @@ Todo código gerado foi:
 
 ## Limitações Identificadas
 
-- **Testes de integração** não foram gerados (fora do escopo do MVP)
-- **Autenticação/Autorização** (JWT/OIDC) não implementada — identificada como sprint seguinte
-- **Kafka / Outbox Pattern** descrito em docs mas não implementado no código (Fase 2)
+- **Kafka / Outbox Pattern** descrito em `docs/eda-proposal.md` mas não implementado no código — identificado como Fase 2 deliberadamente, pois adicionar um broker de mensagens ao MVP aumentaria a complexidade operacional sem benefício proporcional em escala inicial
+- **IaC (Terraform / Kubernetes)** mencionado como opcional no case; não implementado — Docker Compose cobre o escopo local e de avaliação
+- **Cherry-pick de hotfix** como alternativa ao `git revert` — demonstrado via revert (abordagem mais segura para branches compartilhadas); cherry-pick documentado como opção no README
 
 ---
 

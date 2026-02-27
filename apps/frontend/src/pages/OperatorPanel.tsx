@@ -1,14 +1,17 @@
+import { useEffect, useRef } from 'react'
 import { useForm, type SubmitHandler } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { format } from 'date-fns'
+import { useQuery } from '@tanstack/react-query'
 import { usePricingSimulation } from '../hooks/usePricingSimulation'
 import { useCreateSettlement } from '../hooks/useSettlements'
+import { cedentsApi } from '../services/api'
 import type { SimulatePricingRequest, ReceivableType, CurrencyCode } from '../types'
 
 // ── Validation schema ──────────────────────────────────────────────────────
 const schema = z.object({
-  cedentId:       z.string().uuid('Must be a valid UUID'),
+  cedentId:       z.string().uuid('Select a cedent'),
   documentNumber: z.string().min(1, 'Required'),
   receivableType: z.enum(['DuplicataMercantil', 'ChequePredatado']),
   faceValue:      z.preprocess((v) => parseFloat(String(v)), z.number().positive('Must be positive')),
@@ -47,18 +50,44 @@ export default function OperatorPanel() {
   const simulate   = usePricingSimulation()
   const createSettl = useCreateSettlement()
 
-  const watchedValues = watch()
+  // ── Load cedents for select ─────────────────────────────────────────────
+  const { data: cedents = [] } = useQuery({
+    queryKey: ['cedents'],
+    queryFn: cedentsApi.getAll,
+    staleTime: 60_000,
+  })
 
-  // ── Real-time simulation (debounce via TanStack Query mutation) ──────────
+  // ── Debounced auto-simulation on form change ────────────────────────────
+  const watchedValues = watch()
+  const debounceRef   = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (!isValid) return
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      const v = watchedValues
+      simulate.mutate({
+        faceValue:       v.faceValue,
+        faceCurrency:    v.faceCurrency as CurrencyCode,
+        receivableType:  v.receivableType as ReceivableType,
+        dueDate:         v.dueDate,
+        paymentCurrency: v.paymentCurrency as CurrencyCode,
+      })
+    }, 700)
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedValues.faceValue, watchedValues.faceCurrency, watchedValues.receivableType,
+      watchedValues.dueDate, watchedValues.paymentCurrency, isValid])
+
+  // ── Manual simulate (keep button for explicit trigger) ──────────────────
   const onSimulate: SubmitHandler<FormValues> = (data) => {
-    const req: SimulatePricingRequest = {
+    simulate.mutate({
       faceValue:       data.faceValue,
       faceCurrency:    data.faceCurrency as CurrencyCode,
       receivableType:  data.receivableType as ReceivableType,
       dueDate:         data.dueDate,
       paymentCurrency: data.paymentCurrency as CurrencyCode,
-    }
-    simulate.mutate(req)
+    })
   }
 
   // ── Confirm = create settlement ──────────────────────────────────────────
@@ -84,13 +113,14 @@ export default function OperatorPanel() {
         <h2 className="text-lg font-semibold text-gray-800 mb-5">Pricing Simulator</h2>
 
         <form className="space-y-4" onSubmit={handleSubmit(onSimulate)}>
-          {/* Cedent ID */}
-          <Field label="Cedent ID" error={errors.cedentId?.message}>
-            <input
-              {...register('cedentId')}
-              className={inputCls(errors.cedentId)}
-              placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-            />
+          {/* Cedent */}
+          <Field label="Cedent" error={errors.cedentId?.message}>
+            <select {...register('cedentId')} className={inputCls(errors.cedentId)}>
+              <option value="">— select a cedent —</option>
+              {cedents.filter((c) => c.isActive).map((c) => (
+                <option key={c.id} value={c.id}>{c.name} — {c.cnpj}</option>
+              ))}
+            </select>
           </Field>
 
           {/* Document Number */}
@@ -153,6 +183,11 @@ export default function OperatorPanel() {
           >
             {simulate.isPending ? 'Simulating…' : 'Simulate Pricing'}
           </button>
+          {isValid && (
+            <p className="text-xs text-gray-400 text-center -mt-1">
+              ↻ auto-simulates on change
+            </p>
+          )}
 
           {simulate.isError && (
             <p className="text-red-600 text-sm">{simulate.error.message}</p>
@@ -166,7 +201,7 @@ export default function OperatorPanel() {
 
         {!result && !simulate.isPending && (
           <p className="text-gray-400 text-sm my-auto text-center">
-            Fill the form and click "Simulate Pricing"
+            Fill the form — simulation updates automatically
           </p>
         )}
 
