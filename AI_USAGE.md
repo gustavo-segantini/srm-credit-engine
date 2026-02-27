@@ -56,9 +56,11 @@ Documento de transparência sobre o uso de ferramentas de IA durante o desenvolv
 - `docs/high-scale-design.md` — evolução arquitetural para 1M tx/min
 - `docs/eda-proposal.md` — proposta Event-Driven com Kafka + Outbox Pattern
 - `docs/sql/ddl.sql` — DDL completo para revisão de DBA
+- `docs/acceptance-criteria.md` — 24 critérios de aceite em formato BDD (Seção 5.2 do case)
 - `README.md` — documentação completa do projeto
 - `.editorconfig`, `.gitignore`
 - Configurações de observabilidade (Prometheus, Grafana dashboards)
+- `infra/k8s/` — 10 manifestos Kubernetes (namespace, configmap, backend deploy/svc/hpa, frontend, postgres StatefulSet, ingress, kustomization)
 
 ---
 
@@ -87,7 +89,7 @@ As seguintes decisões **não foram automaticamente geradas** — exigiram valid
 Todo código gerado foi:
 
 1. **Revisado manualmente** antes de integração
-2. **Compilado e testado** — `dotnet build` sem erros, `dotnet test` 38/38 passando
+2. **Compilado e testado** — `dotnet build` sem erros, `dotnet test` 47/47 passando (38 unit + 9 integration)
 3. **Validado contra o case** — requisitos funcionais do `README_case_dev_srm.md` verificados linha a linha
 4. **Iterado quando incorreto** — ex: duplicate class em PricingStrategyTests detectado e corrigido manualmente
 
@@ -96,8 +98,6 @@ Todo código gerado foi:
 ## Limitações Identificadas
 
 - **Kafka / Outbox Pattern** descrito em `docs/eda-proposal.md` mas não implementado no código — identificado como Fase 2 deliberadamente, pois adicionar um broker de mensagens ao MVP aumentaria a complexidade operacional sem benefício proporcional em escala inicial
-- **IaC (Terraform / Kubernetes)** mencionado como opcional no case; não implementado — Docker Compose cobre o escopo local e de avaliação
-- **Cherry-pick de hotfix** como alternativa ao `git revert` — demonstrado via revert (abordagem mais segura para branches compartilhadas); cherry-pick documentado como opção no README
 
 ---
 
