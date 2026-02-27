@@ -4,6 +4,7 @@ namespace SrmCreditEngine.Domain.Interfaces.Repositories;
 
 public interface IReceivableRepository : IRepository<Receivable>
 {
+    Task<IReadOnlyList<Receivable>> GetByCedentAsync(Guid cedentId, CancellationToken cancellationToken = default);
     Task<Receivable?> GetByDocumentNumberAsync(string documentNumber, Guid cedentId, CancellationToken cancellationToken = default);
     Task<bool> HasSettlementAsync(Guid receivableId, CancellationToken cancellationToken = default);
 }
