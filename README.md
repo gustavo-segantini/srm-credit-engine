@@ -217,17 +217,116 @@ docs/
 
 ## Branching Strategy
 
-**Trunk-Based Development:**
+**Escolha: Trunk-Based Development (TBD)**
+
+O TBD foi escolhido por dois motivos alinhados ao contexto do projeto:
+
+1. **Ciclo de feedback curto** — feature branches vivem menos de 1 dia; conflitos de merge praticamente não existem.
+2. **CI obrigatório** — cada branch deve passar no pipeline antes de mergear na `main`, tornando a `main` sempre deployável.
 
 ```
-main  ← feat/*, fix/*, chore/* via squash merge + PR
+main  ←── feat/*, fix/*, chore/*, test/*, docs/* via merge --no-ff + PR
 ```
 
-- CI obrigatório passar (backend + tests + frontend)
-- Mínimo 1 reviewer
-- Squash merge apenas
+### Fluxo de Feature Branch
 
-Tags: `v{major}.{minor}.{patch}` (semver)
+O histórico deste repositório demonstra o fluxo completo:
+
+```
+main ─────────────────────────────────────────────────────────────────▶
+       │              │               │               │
+       └─ feat/polly  └─ feat/cedent  └─ test/vitest  └─ ...
+             │               │               │
+           commit           commit          commit
+             │               │               │
+       merge --no-ff   merge --no-ff    merge --no-ff
+```
+
+Branches criados neste projeto (visíveis no `git log --graph`):
+
+| Branch | Tipo | Descrição |
+|---|---|---|
+| `chore/husky-git-hooks` | chore | Husky v9 + lint-staged |
+| `docs/er-diagram` | docs | Diagrama ER Mermaid |
+| `feat/polly-resilience` | feat | Retry + Circuit Breaker |
+| `feat/jwt-auth-rate-limiting` | feat | JWT Bearer + Rate Limiting |
+| `feat/cedent-crud` | feat | CRUD de Cedentes |
+| `feat/receivables-endpoint` | feat | GET /receivables |
+| `feat/frontend-cedents` | feat | Página Cedentes (React) |
+| `test/vitest-setup` | test | Vitest + Testing Library |
+| `test/integration-tests` | test | Testcontainers |
+
+---
+
+### Gestão de Crise — `git revert` em Produção
+
+**Incidente simulado — 2026-02-26T20:00:00Z**
+
+Um bug crítico foi introduzido na branch `main` via commit `232435c`:
+
+```diff
+- private const decimal SpreadMonthly = 0.015m; // 1.5% a.m.
++ private const decimal SpreadMonthly = 0.0m; // BUG: spread zeroed
+```
+
+**Impacto:** O fundo passou a precificar todas as Duplicatas Mercantis com spread **0%**, comprando recebíveis sem desconto — margem financeira zerada em todas as novas operações.
+
+**Resolução:** Em vez de `git reset --hard` (que reescreve histórico público e causa `force push`), foi utilizado `git revert` para criar um commit de desfazimento auditável:
+
+```bash
+# Identificar o commit culpado
+git log --oneline | grep "Q1 performance"
+# → 232435c feat(pricing): adjust duplicata spread for Q1 performance review
+
+# Reverter de forma segura (preserva histórico completo)
+git revert 232435c --no-edit
+# → dd8b6d3 Revert "feat(pricing): adjust duplicata spread..."
+```
+
+**Por que `git revert` e não `git reset`?**
+
+| Abordagem | Reescreve histórico público? | Seguro para branches compartilhados? |
+|---|---|---|
+| `git reset --hard` + force push | ✅ Sim — apaga o commit | ❌ Não — quebra histórico dos outros |
+| `git revert` | ❌ Não — adiciona commit de desfazimento | ✅ Sim — safe para `main` |
+
+O log final conta a história completa do incidente, preservando rastreabilidade para auditoria regulatória (FIDC/CVM):
+
+```
+dd8b6d3  Revert "feat(pricing): adjust duplicata spread for Q1 performance review"
+232435c  feat(pricing): adjust duplicata spread for Q1 performance review  ← BUG
+b1914ea  chore: add frontend-level Husky symlink
+3490c71  Merge branch 'test/integration-tests'
+...
+```
+
+---
+
+### Tags Semânticas
+
+```bash
+v1.0.0  ← entrega inicial (feat completo: pricing engine, settlements, frontend)
+v1.1.0  ← pós-rewrite: JWT, Polly, CRUD Cedentes, Testcontainers, Vitest
+```
+
+---
+
+### Interactive Rebase — Higiene do Histórico
+
+Antes de cada merge para `main`, o histórico da feature branch é organizado com `git rebase -i`:
+
+```bash
+# Squash de commits de fix/wip antes do merge
+git rebase -i origin/main
+
+# Exemplo: múltiplos commits de uma feature transformados em 1 atômico
+# pick a1b2c3 feat(cedents): add domain entity
+# squash d4e5f6 fix: validator typo
+# squash 789abc test: add unit test
+# → resultado: 1 commit limpo com mensagem final consolidada
+```
+
+Regra do time: **nenhum commit `wip:`, `tmp:` ou `fix typo` chega ao histórico da `main`**.
 
 ---
 
