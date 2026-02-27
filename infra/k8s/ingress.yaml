@@ -1,0 +1,49 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: srm-ingress
+  namespace: srm-credit-engine
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "1m"
+    nginx.ingress.kubernetes.io/limit-rps: "100"            # nginx-level rate limiting
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"      # requires cert-manager
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - srm.example.com
+      secretName: srm-tls-secret
+  rules:
+    - host: srm.example.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: srm-api
+                port:
+                  name: http
+          - path: /metrics
+            pathType: Exact
+            backend:
+              service:
+                name: srm-api
+                port:
+                  name: http
+          - path: /health
+            pathType: Exact
+            backend:
+              service:
+                name: srm-api
+                port:
+                  name: http
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: srm-frontend
+                port:
+                  name: http

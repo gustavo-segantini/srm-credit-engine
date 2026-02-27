@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: srm-api
+  namespace: srm-credit-engine
+  labels:
+    app: srm-api
+spec:
+  type: ClusterIP              # exposed externally only via Ingress
+  selector:
+    app: srm-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP

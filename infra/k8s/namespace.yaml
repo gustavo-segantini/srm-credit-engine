@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: srm-credit-engine
+  labels:
+    app.kubernetes.io/name: srm-credit-engine
+    environment: production
