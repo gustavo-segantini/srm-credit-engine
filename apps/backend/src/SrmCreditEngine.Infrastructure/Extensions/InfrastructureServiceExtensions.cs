@@ -2,9 +2,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SrmCreditEngine.Application.Interfaces;
+using SrmCreditEngine.Application.Services;
 using SrmCreditEngine.Domain.Interfaces.Repositories;
 using SrmCreditEngine.Infrastructure.Analytics;
 using SrmCreditEngine.Infrastructure.Data;
+using SrmCreditEngine.Infrastructure.ExternalProviders;
 using SrmCreditEngine.Infrastructure.Repositories;
 
 namespace SrmCreditEngine.Infrastructure.Extensions;
@@ -42,6 +44,32 @@ public static class InfrastructureServiceExtensions
 
         // Analytics (Dapper-based)
         services.AddScoped<ISettlementStatementQuery, SettlementStatementQuery>();
+
+        // External FX Rate Provider — HttpClient with Polly resilience pipeline
+        // Pipeline: retry (3x, exponential back-off 2s/4s/8s) + circuit breaker
+        services.AddHttpClient<IFxRateProviderService, FxRateProviderService>(client =>
+            {
+                client.BaseAddress = new Uri(
+                    configuration["FxProvider:BaseUrl"] ?? "https://api.frankfurter.app/");
+                client.Timeout = TimeSpan.FromSeconds(10);
+                client.DefaultRequestHeaders.Add("Accept", "application/json");
+            })
+            .AddStandardResilienceHandler(options =>
+            {
+                // Retry: 3 attempts with exponential back-off
+                options.Retry.MaxRetryAttempts = 3;
+                options.Retry.BackoffType = Polly.DelayBackoffType.Exponential;
+                options.Retry.Delay = TimeSpan.FromSeconds(2);
+
+                // Circuit Breaker: opens after 50% failure rate over 30-second sampling window
+                options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(30);
+                options.CircuitBreaker.MinimumThroughput = 5;
+                options.CircuitBreaker.FailureRatio = 0.5;
+                options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(20);
+
+                // Total timeout per attempt
+                options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(8);
+            });
 
         return services;
     }

@@ -1,4 +1,5 @@
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SrmCreditEngine.Application.DTOs.Requests;
 using SrmCreditEngine.Application.Services;
@@ -12,13 +13,16 @@ namespace SrmCreditEngine.API.Controllers;
 public sealed class CurrencyController : ControllerBase
 {
     private readonly ICurrencyService _currencyService;
+    private readonly IFxRateProviderService _fxRateProvider;
     private readonly IValidator<UpdateExchangeRateRequest> _validator;
 
     public CurrencyController(
         ICurrencyService currencyService,
+        IFxRateProviderService fxRateProvider,
         IValidator<UpdateExchangeRateRequest> validator)
     {
         _currencyService = currencyService;
+        _fxRateProvider = fxRateProvider;
         _validator = validator;
     }
 
@@ -36,6 +40,7 @@ public sealed class CurrencyController : ControllerBase
     }
 
     /// <summary>Creates or updates the exchange rate for a currency pair.</summary>
+    [Authorize]
     [HttpPut("exchange-rates")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -68,5 +73,41 @@ public sealed class CurrencyController : ControllerBase
             cancellationToken);
 
         return Ok(rates);
+    }
+
+    /// <summary>
+    /// Syncs exchange rates from the external FX provider (e.g. Frankfurter API).
+    /// Resilient via Polly: 3 retries with exponential back-off + circuit breaker.
+    /// Falls back gracefully when the external provider is unavailable.
+    /// </summary>
+    [Authorize]
+    [HttpPost("exchange-rates/sync")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public async Task<IActionResult> SyncFromProvider(
+        [FromQuery] CurrencyCode from = CurrencyCode.BRL,
+        [FromQuery] CurrencyCode to = CurrencyCode.USD,
+        CancellationToken cancellationToken = default)
+    {
+        var providerResult = await _fxRateProvider.FetchRateAsync(from, to, cancellationToken);
+
+        if (providerResult is null)
+            return StatusCode(StatusCodes.Status503ServiceUnavailable,
+                new { message = "External FX provider unavailable. Manual rates remain active." });
+
+        var upsertRequest = new UpdateExchangeRateRequest(
+            from,
+            to,
+            providerResult.Rate,
+            providerResult.Source);
+
+        var result = await _currencyService.UpsertExchangeRateAsync(upsertRequest, cancellationToken);
+
+        return Ok(new
+        {
+            message = "Exchange rate synced from external provider.",
+            rate = result,
+            syncedAt = providerResult.FetchedAt
+        });
     }
 }
