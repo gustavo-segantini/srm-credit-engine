@@ -88,3 +88,11 @@ desktop.ini
 .vscode/settings.json
 .vscode/launch.json
 !.vscode/extensions.json
+# ── Local build output ────────────────────────────────────────────────
+.build/
+
+# ── Playwright / browser automation artifacts ─────────────────────────
+.playwright-mcp/
+*.png
+*.jpeg
+*.jpg
