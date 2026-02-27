@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: srm-frontend
+  namespace: srm-credit-engine
+  labels:
+    app: srm-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: srm-frontend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: srm-frontend
+    spec:
+      containers:
+        - name: srm-frontend
+          image: ghcr.io/gustavo-segantini/srm-credit-engine/frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          securityContext:
+            runAsNonRoot: false          # nginx requires root to bind 80
+            allowPrivilegeEscalation: false

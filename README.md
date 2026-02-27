@@ -20,6 +20,7 @@ Plataforma de crédito multi-moeda para cessão de recebíveis, desenvolvida com
 - [Infraestrutura & Observabilidade](#infraestrutura--observabilidade)
 - [Documentação Técnica](#documentação-técnica)
 - [Branching Strategy](#branching-strategy)
+- [Critérios de Aceite](#critérios-de-aceite)
 
 ---
 
@@ -194,6 +195,39 @@ grafana:11.2     → Dashboards RED metrics
 - Latência P95 / P99
 - Breakdown por rota
 
+### Kubernetes / IaC
+
+Manifestos prontos para produção em `infra/k8s/` (Kustomize):
+
+```
+infra/k8s/
+├── namespace.yaml          → Namespace srm-credit-engine
+├── configmap.yaml          → Variáveis de ambiente não-secretas
+├── backend-deployment.yaml → 2 réplicas, rolling update, probes /health
+├── backend-service.yaml    → ClusterIP :8080
+├── backend-hpa.yaml        → HPA: min 2 / max 10 pods (CPU 70%, MEM 80%)
+├── frontend-deployment.yaml→ 2 réplicas nginx
+├── frontend-service.yaml   → ClusterIP :80
+├── postgres-statefulset.yaml → StatefulSet 1 réplica, PVC 20Gi
+├── postgres-service.yaml   → Headless service para DNS do StatefulSet
+├── ingress.yaml            → TLS (cert-manager), roteamento /api + /
+└── kustomization.yaml      → Entry point: kubectl apply -k infra/k8s/
+```
+
+**Deploy:**
+```bash
+# Criar secrets (fora do controle de versão)
+kubectl create secret generic srm-secrets \
+  --from-literal=POSTGRES_PASSWORD=<senha> \
+  --from-literal=JWT__SecretKey=<chave> \
+  -n srm-credit-engine
+
+# Aplicar todos os manifestos
+kubectl apply -k infra/k8s/
+```
+
+**Escalabilidade:** o HPA ajusta automaticamente de 2 a 10 pods do backend com cooldown de 5 min no scale-down (AC-20).
+
 ---
 
 ## Documentação Técnica
@@ -327,6 +361,20 @@ git rebase -i origin/main
 ```
 
 Regra do time: **nenhum commit `wip:`, `tmp:` ou `fix typo` chega ao histórico da `main`**.
+
+---
+
+## Critérios de Aceite
+
+Definidos em [`docs/acceptance-criteria.md`](docs/acceptance-criteria.md) — 24 ACs em formato BDD (Given/When/Then) organizados em 5 eixos:
+
+| Eixo | ACs | Exemplos |
+|---|---|---|
+| **Usabilidade** | AC-01 – AC-06 | Simulação em tempo real (debounce 700 ms), select de cedente, filtro por cedente, câmbio em tempo real |
+| **Segurança** | AC-07 – AC-13 | JWT 401 sem token, 401 em token expirado, rate limiting 429, validação CNPJ, otimistic locking 409 |
+| **Desempenho** | AC-14 – AC-17 | P95 < 100 ms, Dapper 100 k linhas < 500 ms, FCP < 1,5 s, health check < 50 ms |
+| **Escalabilidade** | AC-18 – AC-21 | Backend stateless, partition pruning, HPA K8s (ref: `backend-hpa.yaml`), circuit breaker |
+| **Rastreabilidade** | AC-22 – AC-24 | Structured logs (Seq), audit trail, versionamento semântico |
 
 ---
 

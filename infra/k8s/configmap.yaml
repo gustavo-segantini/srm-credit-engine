@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: srm-api-config
+  namespace: srm-credit-engine
+data:
+  ASPNETCORE_ENVIRONMENT: "Production"
+  ASPNETCORE_HTTP_PORTS: "8080"
+  Cors__AllowedOrigins__0: "https://srm.example.com"
+  Jwt__Issuer: "srm-credit-engine"
+  Jwt__Audience: "srm-credit-engine-api"
+  Jwt__ExpiryMinutes: "60"
+  Serilog__MinimumLevel__Default: "Information"

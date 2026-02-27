@@ -1,0 +1,34 @@
+# Kustomize root — apply all manifests with:
+#   kubectl apply -k infra/k8s/
+#
+# For environment-specific overlays, create:
+#   infra/k8s/overlays/staging/kustomization.yaml
+#   infra/k8s/overlays/production/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: srm-credit-engine
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  # PostgreSQL
+  - postgres-statefulset.yaml
+  - postgres-service.yaml
+  # Backend API
+  - backend-deployment.yaml
+  - backend-service.yaml
+  - backend-hpa.yaml
+  # Frontend
+  - frontend-deployment.yaml
+  - frontend-service.yaml
+  # Ingress
+  - ingress.yaml
+
+# Image tags are overridden per environment via overlays or CI/CD pipeline:
+#   kubectl set image deployment/srm-api srm-api=ghcr.io/.../api:${GIT_SHA}
+images:
+  - name: ghcr.io/gustavo-segantini/srm-credit-engine/api
+    newTag: latest
+  - name: ghcr.io/gustavo-segantini/srm-credit-engine/frontend
+    newTag: latest

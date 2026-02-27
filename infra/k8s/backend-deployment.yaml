@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: srm-api
+  namespace: srm-credit-engine
+  labels:
+    app: srm-api
+    version: v1
+spec:
+  replicas: 2                          # baseline; HPA will scale from here
+  selector:
+    matchLabels:
+      app: srm-api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0                # zero-downtime deploys
+  template:
+    metadata:
+      labels:
+        app: srm-api
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "8080"
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: srm-api
+          image: ghcr.io/gustavo-segantini/srm-credit-engine/api:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: srm-api-config
+          env:
+            # Secrets injected from K8s Secret (not ConfigMap)
+            - name: ConnectionStrings__DefaultConnection
+              valueFrom:
+                secretKeyRef:
+                  name: srm-secrets
+                  key: db-connection-string
+            - name: Jwt__SecretKey
+              valueFrom:
+                secretKeyRef:
+                  name: srm-secrets
+                  key: jwt-secret-key
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
