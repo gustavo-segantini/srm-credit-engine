@@ -11,7 +11,7 @@ namespace SrmCreditEngine.Application.Strategies;
 /// </summary>
 public sealed class DuplicataMercantilPricingStrategy : IPricingStrategy
 {
-    private const decimal SpreadMonthly = 0.015m; // 1.5% a.m.
+    private const decimal SpreadMonthly = 0.0m; // BUG: spread zeroed — fund buys at face value!
 
     public ReceivableType SupportedType => ReceivableType.DuplicataMercantil;
 
