@@ -6,7 +6,9 @@ import {
   createColumnHelper,
 } from '@tanstack/react-table'
 import { format } from 'date-fns'
+import { useQuery } from '@tanstack/react-query'
 import { useSettlementStatement } from '../hooks/useSettlements'
+import { cedentsApi } from '../services/api'
 import type { SettlementStatementItemResponse, CurrencyCode } from '../types'
 
 const colHelper = createColumnHelper<SettlementStatementItemResponse>()
@@ -67,11 +69,19 @@ export default function TransactionGrid() {
   const [from, setFrom] = useState('')
   const [to, setTo]     = useState('')
   const [currency, setCurrency] = useState<CurrencyCode | ''>('')
+  const [cedentId, setCedentId] = useState('')
   const PAGE_SIZE = 15
+
+  const { data: cedents = [] } = useQuery({
+    queryKey: ['cedents'],
+    queryFn: cedentsApi.getAll,
+    staleTime: 60_000,
+  })
 
   const { data, isFetching, isError, error } = useSettlementStatement({
     from:            from || undefined,
     to:              to   || undefined,
+    cedentId:        cedentId || undefined,
     paymentCurrency: currency as CurrencyCode | undefined,
     page,
     pageSize: PAGE_SIZE,
@@ -121,6 +131,19 @@ export default function TransactionGrid() {
             <option value="">All</option>
             <option value="BRL">BRL</option>
             <option value="USD">USD</option>
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-gray-500">
+          Cedent
+          <select
+            value={cedentId}
+            onChange={(e) => { setCedentId(e.target.value); setPage(1) }}
+            className="border rounded px-2 py-1 text-sm min-w-[160px]"
+          >
+            <option value="">All cedents</option>
+            {cedents.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
           </select>
         </label>
       </div>
