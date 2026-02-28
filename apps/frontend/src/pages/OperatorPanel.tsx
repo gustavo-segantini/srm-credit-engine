@@ -218,8 +218,8 @@ export default function OperatorPanel() {
               <Row label="Present Value"     value={fmt(result.presentValue, result.paymentCurrency)} highlight />
               <Row label="Discount"          value={fmt(result.discount, result.paymentCurrency)} />
               <Row label="Net Disbursement"  value={fmt(result.netDisbursement, result.paymentCurrency)} highlight />
-              <Row label="Spread"            value={`${(result.spread * 100).toFixed(2)}% a.m.`} />
-              <Row label="Base Rate"         value={`${(result.baseRate * 100).toFixed(4)}% a.m.`} />
+              <Row label="Spread"            value={`${result.appliedSpreadPercent.toFixed(2)}% a.m.`} />
+              <Row label="Base Rate"         value={`${result.baseRatePercent.toFixed(4)}% a.m.`} />
               <Row label="Term"              value={`${result.termInMonths} month(s)`} />
               {result.isCrossCurrency && (
                 <Row
