@@ -38,8 +38,9 @@ export interface PricingSimulationResponse {
   faceCurrency: string;
   presentValue: number;
   discount: number;
-  spread: number;
-  baseRate: number;
+  discountRatePercent: number;
+  appliedSpreadPercent: number;
+  baseRatePercent: number;
   termInMonths: number;
   netDisbursement: number;
   paymentCurrency: string;
