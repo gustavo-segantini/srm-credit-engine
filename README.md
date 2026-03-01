@@ -99,6 +99,9 @@ docker compose up -d
 docker compose down -v   # para e remove volumes
 ```
 
+> **Dev com Docker completo:** para rodar com bind-mount e ambiente Development use
+> `docker compose -f docker-compose.yml -f docker-compose.local.yml up -d`
+
 ---
 
 ## Desenvolvimento Local
