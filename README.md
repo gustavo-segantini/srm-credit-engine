@@ -2,7 +2,7 @@
 
 Plataforma de crédito multi-moeda para cessão de recebíveis, desenvolvida como implementação de nível **Expert/Staff/Principal** do case de engenharia SRM.
 
-[![CI](https://github.com/your-org/srm-credit-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/srm-credit-engine/actions/workflows/ci.yml)
+[![CI](https://github.com/gustavo-segantini/srm-credit-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/gustavo-segantini/srm-credit-engine/actions/workflows/ci.yml)
 [![Tests](https://img.shields.io/badge/tests-53%2F53-brightgreen)](apps/backend/tests)
 [![.NET](https://img.shields.io/badge/.NET-10.0-512BD4)](https://dotnet.microsoft.com)
 [![React](https://img.shields.io/badge/React-19-61DAFB)](https://react.dev)
@@ -28,7 +28,7 @@ Plataforma de crédito multi-moeda para cessão de recebíveis, desenvolvida com
 
 O SRM Credit Engine permite que operadores de mesa:
 
-1. **Simulem a precificação** de recebíveis (Cheque, Duplicata, CRI, CRA, Debenture) calculando Valor Presente com spread por tipo
+1. **Simulem a precificação** de recebíveis (Cheque Pré-datado, Duplicata Mercantil) calculando Valor Presente com spread por tipo
 2. **Confirmem liquidações** multi-moeda (BRL/USD/EUR/GBP) com conversão cambial em tempo real
 3. **Acompanhem o grid** de liquidações com paginação server-side e filtros
 4. **Gerenciem taxas de câmbio** com controle de concorrência otimista
@@ -78,7 +78,7 @@ Infrastructure    → EF Core, Dapper, Repositories, UoW
 **Pré-requisitos:** Docker 24+ e Docker Compose 2.20+
 
 ```bash
-git clone https://github.com/your-org/srm-credit-engine.git
+git clone https://github.com/gustavo-segantini/srm-credit-engine.git
 cd srm-credit-engine
 docker compose up -d
 ```
@@ -117,6 +117,7 @@ docker compose up -d postgres seq
 
 cd apps/backend
 dotnet restore
+# Opcional — a aplicação aplica migrations automaticamente na inicialização
 dotnet ef database update \
     --project src/SrmCreditEngine.Infrastructure \
     --startup-project src/SrmCreditEngine.API
@@ -139,7 +140,8 @@ Frontend: `http://localhost:5173` (proxy `/api` → `localhost:5229` configurado
 
 ## API Reference
 
-Base URL: `http://localhost:8080/api/v1`
+Base URL (Docker): `http://localhost:8080/api/v1`  
+Base URL (dev local): `http://localhost:5229/api/v1`
 
 | Método | Endpoint                             | Auth | Descrição                    |
 |--------|--------------------------------------|------|------------------------------|
@@ -157,7 +159,7 @@ Base URL: `http://localhost:8080/api/v1`
 | PUT    | `/exchange-rates`                    | ✅   | Atualiza cotação             |
 | GET    | `/reports/settlement-statement`      | —    | Extrato consolidado          |
 
-Documentação interativa: `http://localhost:8080/scalar`
+Documentação interativa: `http://localhost:8080/scalar` (Docker) · `http://localhost:5229/scalar` (dev local)
 
 ---
 
