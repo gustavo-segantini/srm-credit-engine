@@ -55,7 +55,7 @@ services:
       ConnectionStrings__DefaultConnection: >-
         Host=postgres;Port=5432;Database=srm_credit_engine;
         Username=srm_user;Password=srm_pass
-      Serilog__WriteTo__1__Args__serverUrl: http://seq:5341
+      Seq__ServerUrl: http://seq:5341
     ports:
       - "8080:8080"
     depends_on:

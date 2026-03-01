@@ -16,7 +16,7 @@ services:
         Host=postgres;Port=5432;Database=srm_credit_engine;
         Username=srm_user;Password=srm_pass;Include Error Detail=true
       Serilog__MinimumLevel__Default: Debug
-      Serilog__WriteTo__1__Args__serverUrl: http://seq:5341
+      Seq__ServerUrl: http://seq:5341
     volumes:
       - ./apps/backend:/src   # bind-mount for faster iteration
     ports:

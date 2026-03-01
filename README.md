@@ -148,19 +148,18 @@ Base URL (dev local): `http://localhost:5229/api/v1`
 
 | Método | Endpoint                             | Auth | Descrição                    |
 |--------|--------------------------------------|------|------------------------------|
-| POST   | `/auth/token`                        | —    | Obtém JWT Bearer token       |
-| POST   | `/cedents`                           | ✅   | Cadastra cedente             |
-| GET    | `/cedents`                           | —    | Lista cedentes               |
-| GET    | `/cedents/{id}`                      | —    | Detalhe do cedente           |
-| PUT    | `/cedents/{id}`                      | ✅   | Atualiza cedente             |
-| DELETE | `/cedents/{id}`                      | ✅   | Desativa cedente             |
-| POST   | `/pricing/simulate`                  | —    | Simula precificação (PV)     |
-| GET    | `/settlements`                       | —    | Lista liquidações (paginado) |
-| POST   | `/settlements`                       | ✅   | Confirma liquidação          |
-| GET    | `/settlements/{id}`                  | —    | Detalhe de liquidação        |
-| GET    | `/exchange-rates/{from}/{to}`        | —    | Cotação atual                |
-| PUT    | `/exchange-rates`                    | ✅   | Atualiza cotação             |
-| GET    | `/reports/settlement-statement`      | —    | Extrato consolidado          |
+| POST   | `/auth/token`                             | —    | Obtém JWT Bearer token       |
+| POST   | `/cedents`                                | ✅   | Cadastra cedente             |
+| GET    | `/cedents`                                | —    | Lista cedentes               |
+| GET    | `/cedents/{id}`                           | —    | Detalhe do cedente           |
+| PUT    | `/cedents/{id}`                           | ✅   | Atualiza cedente             |
+| DELETE | `/cedents/{id}`                           | ✅   | Desativa cedente             |
+| POST   | `/pricing/simulate`                       | ✅   | Simula precificação (PV)     |
+| POST   | `/settlements`                            | ✅   | Confirma liquidação          |
+| GET    | `/settlements/{id}`                       | —    | Detalhe de liquidação        |
+| GET    | `/currency/exchange-rates/{from}/{to}`    | —    | Cotação atual                |
+| PUT    | `/currency/exchange-rates`                | ✅   | Atualiza cotação             |
+| GET    | `/reports/settlement-statement`           | ✅   | Extrato consolidado          |
 
 Documentação interativa: `http://localhost:8080/scalar` (Docker) · `http://localhost:5229/scalar` (dev local)
 

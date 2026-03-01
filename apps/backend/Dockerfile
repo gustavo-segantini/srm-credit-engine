@@ -21,9 +21,8 @@ RUN dotnet publish "SrmCreditEngine.API.csproj" \
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
-# Non-root user for security
-RUN addgroup --system appgroup && adduser --system appuser --ingroup appgroup
-USER appuser
+# Non-root user — .NET 8+ images ship with a built-in app uid (1654)
+USER $APP_UID
 
 COPY --from=build /app/publish .
 
