@@ -15,7 +15,6 @@ WORKDIR "/src/src/SrmCreditEngine.API"
 RUN dotnet publish "SrmCreditEngine.API.csproj" \
     -c Release \
     -o /app/publish \
-    --no-restore \
     /p:UseAppHost=false
 
 # ── Stage 2: runtime ──────────────────────────────────────────────────
