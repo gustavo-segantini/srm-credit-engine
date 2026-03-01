@@ -1,8 +1,14 @@
 -- =============================================================================
 -- SRM Credit Engine — DDL (Data Definition Language)
--- Gerado com base no EF Core Migration: 20260226005905_InitialCreate
--- Banco: PostgreSQL 16
--- Encoding: UTF-8
+-- ** ATENÇÃO: Este DDL representa o design de alta escala (1M tx/min) **
+-- ** descrito em docs/high-scale-design.md — NÃO é o schema atual.    **
+-- **                                                                    **
+-- ** O schema da implementação atual é gerenciado pelo EF Core:        **
+-- **   Migration: 20260226005905_InitialCreate                         **
+-- **   Tabelas: cedents, currencies, exchange_rates, receivables,      **
+-- **            settlements (schema: credit)                           **
+-- **   Diferenças: particionamento, settlement_items, outbox_events,   **
+-- **   e tipos ENUM do Postgres são recursos do design futuro.         **
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------

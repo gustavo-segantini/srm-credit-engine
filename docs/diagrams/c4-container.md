@@ -48,6 +48,7 @@ C4Container
 - `OperatorPanel` — simulação de precificação + confirmação de liquidação  
 - `TransactionGrid` — grid paginado de liquidações com filtros  
 - `ExchangeRates` — consulta e atualização de cotações
+- `Cedents` — CRUD de cedentes (lista, cadastro, edição, desativação)
 
 ### ASP.NET Core API (Backend)
 
@@ -61,31 +62,38 @@ Infrastructure    → EF Core, Dapper, Repositories, UoW
 ```
 
 **Endpoints expostos:**
-- `POST /api/v1/pricing/simulate` — calcula PV e spread
-- `GET|POST /api/v1/settlements` — listagem paginada e criação
-- `GET /api/v1/settlements/{id}` — detalhes de liquidação
-- `GET /api/v1/exchange-rates/{from}/{to}` — cotação atual
-- `PUT /api/v1/exchange-rates` — atualiza cotação
-- `GET /api/v1/reports/statement` — extrato consolidado
+- `POST /api/v1/auth/token` — obtém JWT Bearer token
+- `GET /api/v1/cedents` — lista cedentes (público)
+- `POST /api/v1/cedents` — cadastra cedente 🔒
+- `GET /api/v1/cedents/{id}` — detalhe do cedente (público)
+- `PUT /api/v1/cedents/{id}` — atualiza cedente 🔒
+- `DELETE /api/v1/cedents/{id}` — desativa cedente 🔒
+- `POST /api/v1/pricing/simulate` — calcula PV e spread 🔒
+- `POST /api/v1/settlements` — confirma liquidação 🔒
+- `GET /api/v1/settlements/{id}` — detalhes de liquidação (público)
+- `GET /api/v1/currency/exchange-rates/{from}/{to}` — cotação atual (público)
+- `PUT /api/v1/currency/exchange-rates` — atualiza cotação 🔒
+- `GET /api/v1/receivables` — recebíveis por cedente (público)
+- `GET /api/v1/reports/settlement-statement` — extrato consolidado 🔒
 - `GET /health` — health check
 - `GET /metrics` — Prometheus scrape endpoint
 
 ### PostgreSQL 16
 
-**Schemas / Tabelas principais:**
+**Schemas / Tabelas principais** (schema `credit`):
 
-| Tabela            | Domínio          | Chave natural               |
-|-------------------|------------------|-----------------------------|
-| `cedents`         | Cedentes         | `document_number` (CNPJ)    |
-| `receivables`     | Recebíveis       | `document_number + cedent_id` |
-| `settlements`     | Liquidações      | UUID `id`                   |
-| `settlement_items`| Itens            | FK → settlement + receivable |
-| `exchange_rates`  | Câmbio           | `(from_currency, to_currency)` |
+| Tabela            | Domínio          | Chave natural / Unique                    |
+|-------------------|------------------|-------------------------------------------|
+| `cedents`         | Cedentes         | `cnpj` (char 14, UK)                      |
+| `currencies`      | Moedas           | `code` (int enum, UK)                     |
+| `exchange_rates`  | Câmbio           | FK `(from_currency_id, to_currency_id)` + `effective_date` |
+| `receivables`     | Recebíveis       | `(document_number, cedent_id)` (UK composta) |
+| `settlements`     | Liquidações      | `receivable_id` (UK — 1 receivable → 1 settlement) |
 
 **Features utilizadas:**
-- `xmin` — concorrência otimista sem coluna extra
+- `xmin` — concorrência otimista sem coluna extra (cedents, exchange_rates, settlements)
 - `TIMESTAMPTZ` — datas em UTC
-- Índices parciais em `settlement_status`
+- Índices em `settlement.status`, `settled_at`, `created_at` e `due_date`
 
 ---
 

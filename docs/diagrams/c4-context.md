@@ -34,8 +34,8 @@ C4Context
 ### Sistema Principal
 
 **SRM Credit Engine** é responsável por:
-1. Calcular o Valor Presente (PV) de recebíveis aplicando spread por tipo (`Cheque`, `Duplicata`, `CRI`, `CRA`, `Debenture`)
-2. Executar liquidações multi-moeda (BRL, USD, EUR, GBP)
+1. Calcular o Valor Presente (PV) de recebíveis aplicando spread por tipo (`ChequePredatado` 2,5% a.m., `DuplicataMercantil` 1,5% a.m.)
+2. Executar liquidações multi-moeda (BRL, USD)
 3. Gerenciar conversão cambial com taxas atualizáveis
 4. Expor relatórios consolidados de liquidações
 
