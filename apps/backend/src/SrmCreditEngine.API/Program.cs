@@ -159,15 +159,12 @@ try
                 : LogEventLevel.Information;
     });
 
-    if (app.Environment.IsDevelopment())
+    app.MapOpenApi();
+    app.MapScalarApiReference(opts =>
     {
-        app.MapOpenApi();
-        app.MapScalarApiReference(opts =>
-        {
-            opts.Title = "SRM Credit Engine API";
-            opts.Theme = ScalarTheme.DeepSpace;
-        });
-    }
+        opts.Title = "SRM Credit Engine API";
+        opts.Theme = ScalarTheme.DeepSpace;
+    });
 
     app.UseCors("Frontend");
     app.UseRateLimiter();
