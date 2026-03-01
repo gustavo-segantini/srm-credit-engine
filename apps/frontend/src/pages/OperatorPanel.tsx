@@ -7,14 +7,14 @@ import { useQuery } from '@tanstack/react-query'
 import { usePricingSimulation } from '../hooks/usePricingSimulation'
 import { useCreateSettlement } from '../hooks/useSettlements'
 import { cedentsApi } from '../services/api'
-import type { SimulatePricingRequest, ReceivableType, CurrencyCode } from '../types'
+import type { ReceivableType, CurrencyCode } from '../types'
 
 // ── Validation schema ──────────────────────────────────────────────────────
 const schema = z.object({
   cedentId:       z.string().uuid('Select a cedent'),
   documentNumber: z.string().min(1, 'Required'),
   receivableType: z.enum(['DuplicataMercantil', 'ChequePredatado']),
-  faceValue:      z.preprocess((v) => parseFloat(String(v)), z.number().positive('Must be positive')),
+  faceValue:      z.number().positive('Must be positive'),
   faceCurrency:   z.enum(['BRL', 'USD']),
   dueDate:        z.string().min(1, 'Required'),
   paymentCurrency:z.enum(['BRL', 'USD']),
@@ -141,7 +141,7 @@ export default function OperatorPanel() {
             <div className="flex-1">
               <Field label="Face Value" error={errors.faceValue?.message}>
                 <input
-                  {...register('faceValue')}
+                  {...register('faceValue', { valueAsNumber: true })}
                   type="number"
                   step="0.01"
                   className={inputCls(errors.faceValue)}
