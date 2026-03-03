@@ -9,18 +9,10 @@ namespace SrmCreditEngine.API.Controllers;
 [ApiController]
 [Route("api/v1/settlements")]
 [Produces("application/json")]
-public sealed class SettlementsController : ControllerBase
+public sealed class SettlementsController(
+    ISettlementService settlementService,
+    IValidator<CreateSettlementRequest> validator) : ControllerBase
 {
-    private readonly ISettlementService _settlementService;
-    private readonly IValidator<CreateSettlementRequest> _validator;
-
-    public SettlementsController(
-        ISettlementService settlementService,
-        IValidator<CreateSettlementRequest> validator)
-    {
-        _settlementService = settlementService;
-        _validator = validator;
-    }
 
     /// <summary>
     /// Prices and settles a receivable in a single atomic operation.
@@ -36,11 +28,13 @@ public sealed class SettlementsController : ControllerBase
         [FromBody] CreateSettlementRequest request,
         CancellationToken cancellationToken)
     {
-        var validation = await _validator.ValidateAsync(request, cancellationToken);
+        var validation = await validator.ValidateAsync(request, cancellationToken);
         if (!validation.IsValid)
+        {
             return BadRequest(validation.Errors.Select(e => new { e.PropertyName, e.ErrorMessage }));
+        }
 
-        var result = await _settlementService.CreateAndSettleAsync(request, cancellationToken);
+        var result = await settlementService.CreateAndSettleAsync(request, cancellationToken);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
@@ -50,7 +44,7 @@ public sealed class SettlementsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById([FromRoute] Guid id, CancellationToken cancellationToken)
     {
-        var result = await _settlementService.GetByIdAsync(id, cancellationToken);
+        var result = await settlementService.GetByIdAsync(id, cancellationToken);
         return Ok(result);
     }
 }

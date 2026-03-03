@@ -6,10 +6,8 @@ using SrmCreditEngine.Infrastructure.Data;
 
 namespace SrmCreditEngine.Infrastructure.Repositories;
 
-public sealed class CurrencyRepository : Repository<Currency>, ICurrencyRepository
+public sealed class CurrencyRepository(AppDbContext dbContext) : Repository<Currency>(dbContext), ICurrencyRepository
 {
-    public CurrencyRepository(AppDbContext dbContext) : base(dbContext) { }
-
     public async Task<Currency?> GetByCodeAsync(CurrencyCode code, CancellationToken cancellationToken = default)
         => await DbSet.FirstOrDefaultAsync(c => c.Code == code && c.IsActive, cancellationToken);
 

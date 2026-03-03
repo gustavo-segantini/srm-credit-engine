@@ -10,21 +10,11 @@ namespace SrmCreditEngine.API.Controllers;
 [ApiController]
 [Route("api/v1/currency")]
 [Produces("application/json")]
-public sealed class CurrencyController : ControllerBase
+public sealed class CurrencyController(
+    ICurrencyService currencyService,
+    IFxRateProviderService fxRateProvider,
+    IValidator<UpdateExchangeRateRequest> validator) : ControllerBase
 {
-    private readonly ICurrencyService _currencyService;
-    private readonly IFxRateProviderService _fxRateProvider;
-    private readonly IValidator<UpdateExchangeRateRequest> _validator;
-
-    public CurrencyController(
-        ICurrencyService currencyService,
-        IFxRateProviderService fxRateProvider,
-        IValidator<UpdateExchangeRateRequest> validator)
-    {
-        _currencyService = currencyService;
-        _fxRateProvider = fxRateProvider;
-        _validator = validator;
-    }
 
     /// <summary>Gets the latest exchange rate for a currency pair.</summary>
     [HttpGet("exchange-rates/{from}/{to}")]
@@ -35,7 +25,7 @@ public sealed class CurrencyController : ControllerBase
         [FromRoute] CurrencyCode to,
         CancellationToken cancellationToken)
     {
-        var rate = await _currencyService.GetLatestExchangeRateAsync(from, to, cancellationToken);
+        var rate = await currencyService.GetLatestExchangeRateAsync(from, to, cancellationToken);
         return Ok(rate);
     }
 
@@ -48,11 +38,13 @@ public sealed class CurrencyController : ControllerBase
         [FromBody] UpdateExchangeRateRequest request,
         CancellationToken cancellationToken)
     {
-        var validation = await _validator.ValidateAsync(request, cancellationToken);
+        var validation = await validator.ValidateAsync(request, cancellationToken);
         if (!validation.IsValid)
+        {
             return BadRequest(validation.Errors.Select(e => new { e.PropertyName, e.ErrorMessage }));
+        }
 
-        var result = await _currencyService.UpsertExchangeRateAsync(request, cancellationToken);
+        var result = await currencyService.UpsertExchangeRateAsync(request, cancellationToken);
         return Ok(result);
     }
 
@@ -66,7 +58,7 @@ public sealed class CurrencyController : ControllerBase
         [FromQuery] DateTime? toDate,
         CancellationToken cancellationToken)
     {
-        var rates = await _currencyService.GetRateHistoryAsync(
+        var rates = await currencyService.GetRateHistoryAsync(
             from, to,
             fromDate ?? DateTime.UtcNow.AddMonths(-3),
             toDate ?? DateTime.UtcNow,
@@ -89,11 +81,13 @@ public sealed class CurrencyController : ControllerBase
         [FromQuery] CurrencyCode to = CurrencyCode.USD,
         CancellationToken cancellationToken = default)
     {
-        var providerResult = await _fxRateProvider.FetchRateAsync(from, to, cancellationToken);
+        var providerResult = await fxRateProvider.FetchRateAsync(from, to, cancellationToken);
 
         if (providerResult is null)
+        {
             return StatusCode(StatusCodes.Status503ServiceUnavailable,
                 new { message = "External FX provider unavailable. Manual rates remain active." });
+        }
 
         var upsertRequest = new UpdateExchangeRateRequest(
             from,
@@ -101,7 +95,7 @@ public sealed class CurrencyController : ControllerBase
             providerResult.Rate,
             providerResult.Source);
 
-        var result = await _currencyService.UpsertExchangeRateAsync(upsertRequest, cancellationToken);
+        var result = await currencyService.UpsertExchangeRateAsync(upsertRequest, cancellationToken);
 
         return Ok(new
         {

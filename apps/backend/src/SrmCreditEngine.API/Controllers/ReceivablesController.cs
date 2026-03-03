@@ -6,14 +6,8 @@ namespace SrmCreditEngine.API.Controllers;
 [ApiController]
 [Route("api/v1/receivables")]
 [Produces("application/json")]
-public sealed class ReceivablesController : ControllerBase
+public sealed class ReceivablesController(IReceivableRepository receivableRepository) : ControllerBase
 {
-    private readonly IReceivableRepository _receivableRepository;
-
-    public ReceivablesController(IReceivableRepository receivableRepository)
-    {
-        _receivableRepository = receivableRepository;
-    }
 
     /// <summary>Returns all receivables submitted by a specific cedent.</summary>
     [HttpGet]
@@ -24,9 +18,11 @@ public sealed class ReceivablesController : ControllerBase
         CancellationToken cancellationToken)
     {
         if (cedentId == Guid.Empty)
+        {
             return BadRequest(new { message = "cedentId is required." });
+        }
 
-        var receivables = await _receivableRepository.GetByCedentAsync(cedentId, cancellationToken);
+        var receivables = await receivableRepository.GetByCedentAsync(cedentId, cancellationToken);
 
         return Ok(receivables.Select(r => new
         {
@@ -49,8 +45,11 @@ public sealed class ReceivablesController : ControllerBase
         [FromRoute] Guid id,
         CancellationToken cancellationToken)
     {
-        var receivable = await _receivableRepository.GetByIdAsync(id, cancellationToken);
-        if (receivable is null) return NotFound();
+        var receivable = await receivableRepository.GetByIdAsync(id, cancellationToken);
+        if (receivable is null)
+        {
+            return NotFound();
+        }
 
         return Ok(new
         {

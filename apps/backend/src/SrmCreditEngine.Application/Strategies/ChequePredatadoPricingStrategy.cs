@@ -22,9 +22,11 @@ public sealed class ChequePredatadoPricingStrategy : IPricingStrategy
         // termInMonths == 0 → Math.Pow(rate,0) = 1 → PV == FaceValue (zero discount applied).
         // termInMonths < 0  → PV > FaceValue (FIDC would disburse more than face value — critical loss).
         if (termInMonths <= 0)
+        {
             throw new InvalidPricingException(
                 $"Term must be at least 1 month for ChequePredatado. Received: {termInMonths}. " +
                 "Ensure dueDate is in the future.");
+        }
 
         var totalRate = 1m + baseRate + SpreadMonthly;
         var compoundFactor = (decimal)Math.Pow((double)totalRate, termInMonths);

@@ -33,13 +33,19 @@ public sealed class Receivable : Entity
         DateTime dueDate)
     {
         if (faceValue <= 0)
+        {
             throw new InvalidPricingException("Face value must be greater than zero.");
+        }
 
         if (dueDate <= DateTime.UtcNow.Date)
+        {
             throw new InvalidPricingException("Due date must be in the future.");
+        }
 
         if (string.IsNullOrWhiteSpace(documentNumber))
+        {
             throw new BusinessRuleViolationException("INVALID_DOC", "Document number cannot be empty.");
+        }
 
         CedentId = cedentId;
         DocumentNumber = documentNumber;

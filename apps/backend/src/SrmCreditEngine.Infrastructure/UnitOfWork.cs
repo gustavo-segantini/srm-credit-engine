@@ -9,25 +9,19 @@ namespace SrmCreditEngine.Infrastructure;
 /// Coordinates ACID transactions. Uses EF Core's built-in transaction management.
 /// DbContext tracks all changes and flushes them within the same transaction.
 /// </summary>
-public sealed class UnitOfWork : IUnitOfWork
+public sealed class UnitOfWork(AppDbContext dbContext) : IUnitOfWork
 {
-    private readonly AppDbContext _dbContext;
     private IDbContextTransaction? _currentTransaction;
 
-    public UnitOfWork(AppDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
-
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-        => await _dbContext.SaveChangesAsync(cancellationToken);
+        => await dbContext.SaveChangesAsync(cancellationToken);
 
     public async Task ExecuteInTransactionAsync(
         Func<Task> action,
         CancellationToken cancellationToken = default)
     {
         // If there's already an active transaction (nested call), just execute the action
-        if (_dbContext.Database.CurrentTransaction != null)
+        if (dbContext.Database.CurrentTransaction != null)
         {
             await action();
             return;
@@ -35,10 +29,10 @@ public sealed class UnitOfWork : IUnitOfWork
 
         // NpgsqlRetryingExecutionStrategy requires all user-initiated transactions
         // to be wrapped with CreateExecutionStrategy so retries work correctly.
-        var strategy = _dbContext.Database.CreateExecutionStrategy();
+        var strategy = dbContext.Database.CreateExecutionStrategy();
         await strategy.ExecuteAsync(async () =>
         {
-            _currentTransaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+            _currentTransaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
             try
             {
                 await action();
@@ -60,6 +54,6 @@ public sealed class UnitOfWork : IUnitOfWork
     public void Dispose()
     {
         _currentTransaction?.Dispose();
-        _dbContext.Dispose();
+        dbContext.Dispose();
     }
 }

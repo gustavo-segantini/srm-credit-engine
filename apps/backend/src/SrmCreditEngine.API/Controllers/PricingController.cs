@@ -10,18 +10,10 @@ namespace SrmCreditEngine.API.Controllers;
 [ApiController]
 [Route("api/v1/pricing")]
 [Produces("application/json")]
-public sealed class PricingController : ControllerBase
+public sealed class PricingController(
+    IPricingService pricingService,
+    IValidator<SimulatePricingRequest> validator) : ControllerBase
 {
-    private readonly IPricingService _pricingService;
-    private readonly IValidator<SimulatePricingRequest> _validator;
-
-    public PricingController(
-        IPricingService pricingService,
-        IValidator<SimulatePricingRequest> validator)
-    {
-        _pricingService = pricingService;
-        _validator = validator;
-    }
 
     /// <summary>
     /// Simulates the pricing of a receivable without persisting.
@@ -36,11 +28,13 @@ public sealed class PricingController : ControllerBase
         [FromBody] SimulatePricingRequest request,
         CancellationToken cancellationToken)
     {
-        var validation = await _validator.ValidateAsync(request, cancellationToken);
+        var validation = await validator.ValidateAsync(request, cancellationToken);
         if (!validation.IsValid)
+        {
             return BadRequest(validation.Errors.Select(e => new { e.PropertyName, e.ErrorMessage }));
+        }
 
-        var result = await _pricingService.SimulateAsync(request, cancellationToken);
+        var result = await pricingService.SimulateAsync(request, cancellationToken);
         return Ok(result);
     }
 }

@@ -26,10 +26,14 @@ public sealed class Cedent : Entity
     public Cedent(string name, string cnpj, string? contactEmail = null)
     {
         if (string.IsNullOrWhiteSpace(name))
+        {
             throw new BusinessRuleViolationException("INVALID_CEDENT", "Cedent name cannot be empty.");
+        }
 
         if (string.IsNullOrWhiteSpace(cnpj) || cnpj.Length != 14)
+        {
             throw new BusinessRuleViolationException("INVALID_CNPJ", "CNPJ must contain exactly 14 digits.");
+        }
 
         Name = name;
         Cnpj = cnpj;
@@ -40,7 +44,9 @@ public sealed class Cedent : Entity
     public void Update(string name, string? contactEmail)
     {
         if (string.IsNullOrWhiteSpace(name))
+        {
             throw new BusinessRuleViolationException("INVALID_CEDENT", "Cedent name cannot be empty.");
+        }
 
         Name = name;
         ContactEmail = contactEmail;

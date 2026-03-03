@@ -8,31 +8,22 @@ using SrmCreditEngine.Domain.Interfaces.Repositories;
 
 namespace SrmCreditEngine.Application.Services;
 
-public sealed class CurrencyService : ICurrencyService
+public sealed class CurrencyService(
+    IExchangeRateRepository exchangeRateRepo,
+    ICurrencyRepository currencyRepo,
+    IUnitOfWork unitOfWork) : ICurrencyService
 {
-    private readonly IExchangeRateRepository _exchangeRateRepo;
-    private readonly ICurrencyRepository _currencyRepo;
-    private readonly IUnitOfWork _unitOfWork;
-
-    public CurrencyService(
-        IExchangeRateRepository exchangeRateRepo,
-        ICurrencyRepository currencyRepo,
-        IUnitOfWork unitOfWork)
-    {
-        _exchangeRateRepo = exchangeRateRepo;
-        _currencyRepo = currencyRepo;
-        _unitOfWork = unitOfWork;
-    }
-
     public async Task<ExchangeRateResponse> GetLatestExchangeRateAsync(
         CurrencyCode from,
         CurrencyCode to,
         CancellationToken cancellationToken = default)
     {
-        var rate = await _exchangeRateRepo.GetLatestAsync(from, to, cancellationToken: cancellationToken);
+        var rate = await exchangeRateRepo.GetLatestAsync(from, to, cancellationToken: cancellationToken);
 
         if (rate == null)
+        {
             throw new ExchangeRateNotFoundException(from.ToString(), to.ToString());
+        }
 
         return MapToResponse(rate);
     }
@@ -41,20 +32,20 @@ public sealed class CurrencyService : ICurrencyService
         UpdateExchangeRateRequest request,
         CancellationToken cancellationToken = default)
     {
-        var fromCurrency = await _currencyRepo.GetByCodeAsync(request.FromCurrency, cancellationToken)
+        var fromCurrency = await currencyRepo.GetByCodeAsync(request.FromCurrency, cancellationToken)
             ?? throw new BusinessRuleViolationException("CURRENCY_NOT_FOUND", $"Currency {request.FromCurrency} not found.");
 
-        var toCurrency = await _currencyRepo.GetByCodeAsync(request.ToCurrency, cancellationToken)
+        var toCurrency = await currencyRepo.GetByCodeAsync(request.ToCurrency, cancellationToken)
             ?? throw new BusinessRuleViolationException("CURRENCY_NOT_FOUND", $"Currency {request.ToCurrency} not found.");
 
         ExchangeRate exchangeRate;
-        var existing = await _exchangeRateRepo.GetLatestAsync(
+        var existing = await exchangeRateRepo.GetLatestAsync(
             request.FromCurrency, request.ToCurrency, cancellationToken: cancellationToken);
 
         if (existing != null)
         {
             existing.Update(request.Rate, request.Source);
-            _exchangeRateRepo.Update(existing);
+            exchangeRateRepo.Update(existing);
             exchangeRate = existing;
         }
         else
@@ -66,10 +57,10 @@ public sealed class CurrencyService : ICurrencyService
                 DateTime.UtcNow,
                 request.Source);
 
-            await _exchangeRateRepo.AddAsync(exchangeRate, cancellationToken);
+            await exchangeRateRepo.AddAsync(exchangeRate, cancellationToken);
         }
 
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         return MapToResponse(exchangeRate);
     }
 
@@ -80,7 +71,7 @@ public sealed class CurrencyService : ICurrencyService
         DateTime toDate,
         CancellationToken cancellationToken = default)
     {
-        var rates = await _exchangeRateRepo.GetHistoryAsync(from, to, fromDate, toDate, cancellationToken);
+        var rates = await exchangeRateRepo.GetHistoryAsync(from, to, fromDate, toDate, cancellationToken);
         return rates.Select(MapToResponse).ToList();
     }
 

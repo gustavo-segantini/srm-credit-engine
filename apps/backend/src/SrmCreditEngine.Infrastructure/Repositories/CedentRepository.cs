@@ -5,10 +5,8 @@ using SrmCreditEngine.Infrastructure.Data;
 
 namespace SrmCreditEngine.Infrastructure.Repositories;
 
-public sealed class CedentRepository : Repository<Cedent>, ICedentRepository
+public sealed class CedentRepository(AppDbContext dbContext) : Repository<Cedent>(dbContext), ICedentRepository
 {
-    public CedentRepository(AppDbContext dbContext) : base(dbContext) { }
-
     public async Task<Cedent?> GetByCnpjAsync(string cnpj, CancellationToken cancellationToken = default)
         => await DbSet.FirstOrDefaultAsync(c => c.Cnpj == cnpj && c.IsActive, cancellationToken);
 

@@ -9,14 +9,8 @@ namespace SrmCreditEngine.API.Controllers;
 [ApiController]
 [Route("api/v1/reports")]
 [Produces("application/json")]
-public sealed class ReportsController : ControllerBase
+public sealed class ReportsController(ISettlementService settlementService) : ControllerBase
 {
-    private readonly ISettlementService _settlementService;
-
-    public ReportsController(ISettlementService settlementService)
-    {
-        _settlementService = settlementService;
-    }
 
     /// <summary>
     /// Returns a paginated settlement statement filtered by period, cedent and currency.
@@ -34,8 +28,15 @@ public sealed class ReportsController : ControllerBase
         [FromQuery] int pageSize = 50,
         CancellationToken cancellationToken = default)
     {
-        if (page < 1) page = 1;
-        if (pageSize is < 1 or > 200) pageSize = 50;
+        if (page < 1)
+        {
+            page = 1;
+        }
+
+        if (pageSize is < 1 or > 200)
+        {
+            pageSize = 50;
+        }
 
         var request = new GetSettlementStatementRequest(
             From: from,
@@ -45,7 +46,7 @@ public sealed class ReportsController : ControllerBase
             Page: page,
             PageSize: pageSize);
 
-        var result = await _settlementService.GetStatementAsync(request, cancellationToken);
+        var result = await settlementService.GetStatementAsync(request, cancellationToken);
         return Ok(result);
     }
 }
