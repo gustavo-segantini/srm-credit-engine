@@ -6,10 +6,8 @@ using SrmCreditEngine.Infrastructure.Data;
 
 namespace SrmCreditEngine.Infrastructure.Repositories;
 
-public sealed class ExchangeRateRepository : Repository<ExchangeRate>, IExchangeRateRepository
+public sealed class ExchangeRateRepository(AppDbContext dbContext) : Repository<ExchangeRate>(dbContext), IExchangeRateRepository
 {
-    public ExchangeRateRepository(AppDbContext dbContext) : base(dbContext) { }
-
     public async Task<ExchangeRate?> GetLatestAsync(
         CurrencyCode fromCurrency,
         CurrencyCode toCurrency,

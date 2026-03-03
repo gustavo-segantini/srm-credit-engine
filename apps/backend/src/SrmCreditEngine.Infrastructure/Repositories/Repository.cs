@@ -4,16 +4,10 @@ using SrmCreditEngine.Infrastructure.Data;
 
 namespace SrmCreditEngine.Infrastructure.Repositories;
 
-public abstract class Repository<T> : IRepository<T> where T : class
+public abstract class Repository<T>(AppDbContext dbContext) : IRepository<T> where T : class
 {
-    protected readonly AppDbContext DbContext;
-    protected readonly DbSet<T> DbSet;
-
-    protected Repository(AppDbContext dbContext)
-    {
-        DbContext = dbContext;
-        DbSet = dbContext.Set<T>();
-    }
+    protected readonly AppDbContext DbContext = dbContext;
+    protected readonly DbSet<T> DbSet = dbContext.Set<T>();
 
     public virtual async Task<T?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => await DbSet.FindAsync([id], cancellationToken);

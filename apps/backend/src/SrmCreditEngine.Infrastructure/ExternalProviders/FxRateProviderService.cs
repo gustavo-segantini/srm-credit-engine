@@ -13,19 +13,10 @@ namespace SrmCreditEngine.Infrastructure.ExternalProviders;
 /// For local/test environments the base address should be set to a mock URL
 /// or left unconfigured — the fallback returns a hardcoded simulation value.
 /// </summary>
-public sealed class FxRateProviderService : IFxRateProviderService
+public sealed class FxRateProviderService(
+    HttpClient httpClient,
+    ILogger<FxRateProviderService> logger) : IFxRateProviderService
 {
-    private readonly HttpClient _httpClient;
-    private readonly ILogger<FxRateProviderService> _logger;
-
-    public FxRateProviderService(
-        HttpClient httpClient,
-        ILogger<FxRateProviderService> logger)
-    {
-        _httpClient = httpClient;
-        _logger = logger;
-    }
-
     public async Task<FxRateProviderResult?> FetchRateAsync(
         CurrencyCode from,
         CurrencyCode to,
@@ -36,7 +27,7 @@ public sealed class FxRateProviderService : IFxRateProviderService
             // Real endpoint pattern (Open Exchange Rates / Frankfurter / etc.)
             // Base address set in InfrastructureServiceExtensions.
             var url = $"latest?base={from}&symbols={to}";
-            var response = await _httpClient.GetAsync(url, cancellationToken);
+            var response = await httpClient.GetAsync(url, cancellationToken);
             response.EnsureSuccessStatusCode();
 
             using var doc = await JsonDocument.ParseAsync(
@@ -49,7 +40,7 @@ public sealed class FxRateProviderService : IFxRateProviderService
                 .GetProperty(to.ToString())
                 .GetDecimal();
 
-            _logger.LogInformation(
+            logger.LogInformation(
                 "Fetched FX rate {From}→{To} = {Rate} from external provider",
                 from, to, rate);
 
@@ -59,14 +50,14 @@ public sealed class FxRateProviderService : IFxRateProviderService
         {
             // Polly's circuit breaker will open after repeated failures.
             // We log and return null so the caller can fall back gracefully.
-            _logger.LogWarning(ex,
+            logger.LogWarning(ex,
                 "External FX provider unavailable for {From}→{To}. Falling back to manual rates.",
                 from, to);
             return null;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            _logger.LogError(ex, "Unexpected error fetching FX rate {From}→{To}", from, to);
+            logger.LogError(ex, "Unexpected error fetching FX rate {From}→{To}", from, to);
             return null;
         }
     }

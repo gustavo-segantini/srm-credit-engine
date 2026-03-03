@@ -5,10 +5,8 @@ using SrmCreditEngine.Infrastructure.Data;
 
 namespace SrmCreditEngine.Infrastructure.Repositories;
 
-public sealed class SettlementRepository : Repository<Settlement>, ISettlementRepository
+public sealed class SettlementRepository(AppDbContext dbContext) : Repository<Settlement>(dbContext), ISettlementRepository
 {
-    public SettlementRepository(AppDbContext dbContext) : base(dbContext) { }
-
     public async Task<Settlement?> GetByReceivableIdAsync(
         Guid receivableId,
         CancellationToken cancellationToken = default)

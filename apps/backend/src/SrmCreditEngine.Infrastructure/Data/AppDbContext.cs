@@ -3,10 +3,8 @@ using SrmCreditEngine.Domain.Entities;
 
 namespace SrmCreditEngine.Infrastructure.Data;
 
-public sealed class AppDbContext : DbContext
+public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
-
     public DbSet<Currency> Currencies => Set<Currency>();
     public DbSet<ExchangeRate> ExchangeRates => Set<ExchangeRate>();
     public DbSet<Cedent> Cedents => Set<Cedent>();

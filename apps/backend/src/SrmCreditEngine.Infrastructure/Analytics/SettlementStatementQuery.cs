@@ -13,22 +13,17 @@ namespace SrmCreditEngine.Infrastructure.Analytics;
 /// Bypasses EF Core for performance on large datasets.
 /// Uses parameterized SQL to prevent SQL injection.
 /// </summary>
-public sealed class SettlementStatementQuery : ISettlementStatementQuery
+public sealed class SettlementStatementQuery(AppDbContext dbContext) : ISettlementStatementQuery
 {
-    private readonly AppDbContext _dbContext;
-
-    public SettlementStatementQuery(AppDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
-
     public async Task<SettlementStatementResponse> GetStatementAsync(
         GetSettlementStatementRequest request,
         CancellationToken cancellationToken = default)
     {
-        var connection = _dbContext.Database.GetDbConnection();
+        var connection = dbContext.Database.GetDbConnection();
         if (connection.State != ConnectionState.Open)
+        {
             await connection.OpenAsync(cancellationToken);
+        }
 
         var parameters = new DynamicParameters();
         var conditions = new List<string>();

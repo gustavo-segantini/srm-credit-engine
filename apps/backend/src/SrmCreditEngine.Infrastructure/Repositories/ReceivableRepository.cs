@@ -5,10 +5,8 @@ using SrmCreditEngine.Infrastructure.Data;
 
 namespace SrmCreditEngine.Infrastructure.Repositories;
 
-public sealed class ReceivableRepository : Repository<Receivable>, IReceivableRepository
+public sealed class ReceivableRepository(AppDbContext dbContext) : Repository<Receivable>(dbContext), IReceivableRepository
 {
-    public ReceivableRepository(AppDbContext dbContext) : base(dbContext) { }
-
     public async Task<IReadOnlyList<Receivable>> GetByCedentAsync(
         Guid cedentId,
         CancellationToken cancellationToken = default)
