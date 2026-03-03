@@ -9,57 +9,40 @@ using SrmCreditEngine.Domain.ValueObjects;
 
 namespace SrmCreditEngine.Application.Services;
 
-public sealed class SettlementService : ISettlementService
+public sealed class SettlementService(
+    ISettlementRepository settlementRepo,
+    IReceivableRepository receivableRepo,
+    ICedentRepository cedentRepo,
+    IExchangeRateRepository exchangeRateRepo,
+    PricingStrategyFactory strategyFactory,
+    IUnitOfWork unitOfWork,
+    ISettlementStatementQuery statementQuery) : ISettlementService
 {
     private const decimal DefaultBaseRateMonthly = 0.0089m; // ~0.89% a.m.
-
-    private readonly ISettlementRepository _settlementRepo;
-    private readonly IReceivableRepository _receivableRepo;
-    private readonly ICedentRepository _cedentRepo;
-    private readonly IExchangeRateRepository _exchangeRateRepo;
-    private readonly PricingStrategyFactory _strategyFactory;
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly ISettlementStatementQuery _statementQuery;
-
-    public SettlementService(
-        ISettlementRepository settlementRepo,
-        IReceivableRepository receivableRepo,
-        ICedentRepository cedentRepo,
-        IExchangeRateRepository exchangeRateRepo,
-        PricingStrategyFactory strategyFactory,
-        IUnitOfWork unitOfWork,
-        ISettlementStatementQuery statementQuery)
-    {
-        _settlementRepo = settlementRepo;
-        _receivableRepo = receivableRepo;
-        _cedentRepo = cedentRepo;
-        _exchangeRateRepo = exchangeRateRepo;
-        _strategyFactory = strategyFactory;
-        _unitOfWork = unitOfWork;
-        _statementQuery = statementQuery;
-    }
 
     public async Task<SettlementResponse> CreateAndSettleAsync(
         CreateSettlementRequest request,
         CancellationToken cancellationToken = default)
     {
         // Validate cedent exists
-        var cedent = await _cedentRepo.GetByIdAsync(request.CedentId, cancellationToken)
+        var cedent = await cedentRepo.GetByIdAsync(request.CedentId, cancellationToken)
             ?? throw new BusinessRuleViolationException("CEDENT_NOT_FOUND", $"Cedent {request.CedentId} not found.");
 
         // Idempotency — check if document already exists for this cedent
-        var existingReceivable = await _receivableRepo.GetByDocumentNumberAsync(
+        var existingReceivable = await receivableRepo.GetByDocumentNumberAsync(
             request.DocumentNumber, request.CedentId, cancellationToken);
 
         if (existingReceivable != null)
         {
-            var existingSettlement = await _settlementRepo.GetByReceivableIdAsync(
+            var existingSettlement = await settlementRepo.GetByReceivableIdAsync(
                 existingReceivable.Id, cancellationToken);
 
             if (existingSettlement != null)
+            {
                 throw new BusinessRuleViolationException(
                     "DUPLICATE_SETTLEMENT",
                     $"Document '{request.DocumentNumber}' has already been settled.");
+            }
         }
 
         // Create receivable
@@ -74,7 +57,7 @@ public sealed class SettlementService : ISettlementService
         var termInMonths = receivable.GetTermInMonths(DateTime.UtcNow);
 
         // Price the receivable
-        var strategy = _strategyFactory.Resolve(request.ReceivableType);
+        var strategy = strategyFactory.Resolve(request.ReceivableType);
         var faceValue = new Money(request.FaceValue, request.FaceCurrency);
         var pricingResult = strategy.Calculate(faceValue, termInMonths, DefaultBaseRateMonthly);
 
@@ -82,7 +65,7 @@ public sealed class SettlementService : ISettlementService
         var finalPricingResult = pricingResult;
         if (request.FaceCurrency != request.PaymentCurrency)
         {
-            var rate = await _exchangeRateRepo.GetLatestAsync(
+            var rate = await exchangeRateRepo.GetLatestAsync(
                 request.FaceCurrency, request.PaymentCurrency, cancellationToken: cancellationToken)
                 ?? throw new ExchangeRateNotFoundException(
                     request.FaceCurrency.ToString(), request.PaymentCurrency.ToString());
@@ -102,19 +85,19 @@ public sealed class SettlementService : ISettlementService
         Settlement settlement = default!;
 
         // ACID transaction: persist receivable + settlement atomically
-        await _unitOfWork.ExecuteInTransactionAsync(async () =>
+        await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
-            await _receivableRepo.AddAsync(receivable, cancellationToken);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await receivableRepo.AddAsync(receivable, cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
 
             settlement = Settlement.CreatePending(receivable.Id, finalPricingResult);
-            await _settlementRepo.AddAsync(settlement, cancellationToken);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await settlementRepo.AddAsync(settlement, cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
 
             // Settle immediately (fund acquires the receivable)
             settlement.MarkAsSettled();
-            _settlementRepo.Update(settlement);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            settlementRepo.Update(settlement);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
         }, cancellationToken);
 
         return MapToResponse(settlement, receivable, cedent);
@@ -124,13 +107,13 @@ public sealed class SettlementService : ISettlementService
         Guid settlementId,
         CancellationToken cancellationToken = default)
     {
-        var settlement = await _settlementRepo.GetByIdAsync(settlementId, cancellationToken)
+        var settlement = await settlementRepo.GetByIdAsync(settlementId, cancellationToken)
             ?? throw new BusinessRuleViolationException("SETTLEMENT_NOT_FOUND", $"Settlement {settlementId} not found.");
 
-        var receivable = await _receivableRepo.GetByIdAsync(settlement.ReceivableId, cancellationToken)
+        var receivable = await receivableRepo.GetByIdAsync(settlement.ReceivableId, cancellationToken)
             ?? throw new BusinessRuleViolationException("RECEIVABLE_NOT_FOUND", "Associated receivable not found.");
 
-        var cedent = await _cedentRepo.GetByIdAsync(receivable.CedentId, cancellationToken)
+        var cedent = await cedentRepo.GetByIdAsync(receivable.CedentId, cancellationToken)
             ?? throw new BusinessRuleViolationException("CEDENT_NOT_FOUND", "Associated cedent not found.");
 
         return MapToResponse(settlement, receivable, cedent);
@@ -139,7 +122,7 @@ public sealed class SettlementService : ISettlementService
     public Task<SettlementStatementResponse> GetStatementAsync(
         GetSettlementStatementRequest request,
         CancellationToken cancellationToken = default)
-        => _statementQuery.GetStatementAsync(request, cancellationToken);
+        => statementQuery.GetStatementAsync(request, cancellationToken);
 
     private static SettlementResponse MapToResponse(Settlement s, Receivable r, Domain.Entities.Cedent c)
     {

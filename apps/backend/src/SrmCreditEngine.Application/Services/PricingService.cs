@@ -8,27 +8,18 @@ using SrmCreditEngine.Domain.ValueObjects;
 
 namespace SrmCreditEngine.Application.Services;
 
-public sealed class PricingService : IPricingService
+public sealed class PricingService(
+    PricingStrategyFactory strategyFactory,
+    IExchangeRateRepository exchangeRateRepository) : IPricingService
 {
     // Base monthly rate (CDI-like proxy). In production, fetch from a rate provider.
     private const decimal DefaultBaseRateMonthly = 0.0089m; // ~0.89% a.m. ≈ 11% a.a.
-
-    private readonly PricingStrategyFactory _strategyFactory;
-    private readonly IExchangeRateRepository _exchangeRateRepository;
-
-    public PricingService(
-        PricingStrategyFactory strategyFactory,
-        IExchangeRateRepository exchangeRateRepository)
-    {
-        _strategyFactory = strategyFactory;
-        _exchangeRateRepository = exchangeRateRepository;
-    }
 
     public async Task<PricingSimulationResponse> SimulateAsync(
         SimulatePricingRequest request,
         CancellationToken cancellationToken = default)
     {
-        var strategy = _strategyFactory.Resolve(request.ReceivableType);
+        var strategy = strategyFactory.Resolve(request.ReceivableType);
         var faceValue = new Money(request.FaceValue, request.FaceCurrency);
 
         var dueDate = request.DueDate.ToUniversalTime();
@@ -43,15 +34,17 @@ public sealed class PricingService : IPricingService
 
         if (request.FaceCurrency != request.PaymentCurrency)
         {
-            var rate = await _exchangeRateRepository.GetLatestAsync(
+            var rate = await exchangeRateRepository.GetLatestAsync(
                 request.FaceCurrency,
                 request.PaymentCurrency,
                 cancellationToken: cancellationToken);
 
             if (rate == null)
+            {
                 throw new ExchangeRateNotFoundException(
                     request.FaceCurrency.ToString(),
                     request.PaymentCurrency.ToString());
+            }
 
             exchangeRateApplied = rate.Rate;
             netDisbursement = result.PresentValue.ConvertTo(request.PaymentCurrency, rate.Rate);
