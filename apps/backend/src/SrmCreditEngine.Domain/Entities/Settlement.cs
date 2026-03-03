@@ -65,9 +65,11 @@ public sealed class Settlement : Entity
     public void MarkAsSettled()
     {
         if (Status != SettlementStatus.Pending)
+        {
             throw new BusinessRuleViolationException(
                 "SETTLEMENT_INVALID_STATE",
                 $"Cannot settle a transaction in status '{Status}'.");
+        }
 
         Status = SettlementStatus.Settled;
         SettledAt = DateTime.UtcNow;
@@ -77,9 +79,11 @@ public sealed class Settlement : Entity
     public void MarkAsFailed(string reason)
     {
         if (Status == SettlementStatus.Settled)
+        {
             throw new BusinessRuleViolationException(
                 "SETTLEMENT_ALREADY_SETTLED",
                 "Cannot fail a transaction that is already settled.");
+        }
 
         Status = SettlementStatus.Failed;
         FailureReason = reason;
@@ -89,9 +93,11 @@ public sealed class Settlement : Entity
     public void Cancel()
     {
         if (Status == SettlementStatus.Settled)
+        {
             throw new BusinessRuleViolationException(
                 "SETTLEMENT_ALREADY_SETTLED",
                 "Cannot cancel a settled transaction.");
+        }
 
         Status = SettlementStatus.Cancelled;
         TouchUpdatedAt();

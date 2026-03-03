@@ -34,7 +34,9 @@ public sealed class ExchangeRate : Entity
         DateTime? expiresAt = null)
     {
         if (rate <= 0)
+        {
             throw new InvalidPricingException("Exchange rate must be greater than zero.");
+        }
 
         FromCurrencyId = fromCurrencyId;
         ToCurrencyId = toCurrencyId;
@@ -47,7 +49,9 @@ public sealed class ExchangeRate : Entity
     public void Update(decimal newRate, string source)
     {
         if (newRate <= 0)
+        {
             throw new InvalidPricingException("Exchange rate must be greater than zero.");
+        }
 
         Rate = newRate;
         Source = source;

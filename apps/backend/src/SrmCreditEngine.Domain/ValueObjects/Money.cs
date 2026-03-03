@@ -15,7 +15,9 @@ public sealed record Money
     public Money(decimal amount, CurrencyCode currency)
     {
         if (amount < 0)
+        {
             throw new InvalidPricingException("Money amount cannot be negative.");
+        }
 
         Amount = Math.Round(amount, 8, MidpointRounding.AwayFromZero);
         Currency = currency;
@@ -39,14 +41,20 @@ public sealed record Money
     public Money Divide(decimal divisor)
     {
         if (divisor == 0)
+        {
             throw new InvalidPricingException("Division by zero in money calculation.");
+        }
+
         return new Money(Amount / divisor, Currency);
     }
 
     public Money ConvertTo(CurrencyCode targetCurrency, decimal exchangeRate)
     {
         if (exchangeRate <= 0)
+        {
             throw new InvalidPricingException("Exchange rate must be positive.");
+        }
+
         return new Money(Amount * exchangeRate, targetCurrency);
     }
 
@@ -57,8 +65,10 @@ public sealed record Money
     private void EnsureSameCurrency(Money other)
     {
         if (Currency != other.Currency)
+        {
             throw new InvalidPricingException(
                 $"Cannot operate on different currencies: {Currency} and {other.Currency}.");
+        }
     }
 
     public override string ToString() => $"{Amount:F8} {Currency}";
