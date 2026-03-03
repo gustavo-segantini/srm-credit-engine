@@ -9,28 +9,18 @@ namespace SrmCreditEngine.API.Controllers;
 [ApiController]
 [Route("api/v1/cedents")]
 [Produces("application/json")]
-public sealed class CedentsController : ControllerBase
+public sealed class CedentsController(
+    ICedentService cedentService,
+    IValidator<CreateCedentRequest> createValidator,
+    IValidator<UpdateCedentRequest> updateValidator) : ControllerBase
 {
-    private readonly ICedentService _cedentService;
-    private readonly IValidator<CreateCedentRequest> _createValidator;
-    private readonly IValidator<UpdateCedentRequest> _updateValidator;
-
-    public CedentsController(
-        ICedentService cedentService,
-        IValidator<CreateCedentRequest> createValidator,
-        IValidator<UpdateCedentRequest> updateValidator)
-    {
-        _cedentService = cedentService;
-        _createValidator = createValidator;
-        _updateValidator = updateValidator;
-    }
 
     /// <summary>Returns all active cedents.</summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
-        var cedents = await _cedentService.GetAllActiveAsync(cancellationToken);
+        var cedents = await cedentService.GetAllActiveAsync(cancellationToken);
         return Ok(cedents);
     }
 
@@ -40,8 +30,12 @@ public sealed class CedentsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById([FromRoute] Guid id, CancellationToken cancellationToken)
     {
-        var cedent = await _cedentService.GetByIdAsync(id, cancellationToken);
-        if (cedent is null) return NotFound();
+        var cedent = await cedentService.GetByIdAsync(id, cancellationToken);
+        if (cedent is null)
+        {
+            return NotFound();
+        }
+
         return Ok(cedent);
     }
 
@@ -55,11 +49,13 @@ public sealed class CedentsController : ControllerBase
         [FromBody] CreateCedentRequest request,
         CancellationToken cancellationToken)
     {
-        var validation = await _createValidator.ValidateAsync(request, cancellationToken);
+        var validation = await createValidator.ValidateAsync(request, cancellationToken);
         if (!validation.IsValid)
+        {
             return BadRequest(validation.Errors.Select(e => new { e.PropertyName, e.ErrorMessage }));
+        }
 
-        var result = await _cedentService.CreateAsync(request, cancellationToken);
+        var result = await cedentService.CreateAsync(request, cancellationToken);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
@@ -74,11 +70,13 @@ public sealed class CedentsController : ControllerBase
         [FromBody] UpdateCedentRequest request,
         CancellationToken cancellationToken)
     {
-        var validation = await _updateValidator.ValidateAsync(request, cancellationToken);
+        var validation = await updateValidator.ValidateAsync(request, cancellationToken);
         if (!validation.IsValid)
+        {
             return BadRequest(validation.Errors.Select(e => new { e.PropertyName, e.ErrorMessage }));
+        }
 
-        var result = await _cedentService.UpdateAsync(id, request, cancellationToken);
+        var result = await cedentService.UpdateAsync(id, request, cancellationToken);
         return Ok(result);
     }
 
@@ -89,7 +87,7 @@ public sealed class CedentsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Deactivate([FromRoute] Guid id, CancellationToken cancellationToken)
     {
-        await _cedentService.DeactivateAsync(id, cancellationToken);
+        await cedentService.DeactivateAsync(id, cancellationToken);
         return NoContent();
     }
 }

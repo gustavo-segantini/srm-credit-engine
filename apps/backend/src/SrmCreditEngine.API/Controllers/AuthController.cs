@@ -15,14 +15,8 @@ namespace SrmCreditEngine.API.Controllers;
 [Route("api/v1/auth")]
 [Produces("application/json")]
 [AllowAnonymous]
-public sealed class AuthController : ControllerBase
+public sealed class AuthController(IConfiguration configuration) : ControllerBase
 {
-    private readonly IConfiguration _configuration;
-
-    public AuthController(IConfiguration configuration)
-    {
-        _configuration = configuration;
-    }
 
     /// <summary>
     /// Issues a JWT Bearer token for a given username/role.
@@ -34,9 +28,11 @@ public sealed class AuthController : ControllerBase
     public IActionResult Token([FromBody] TokenRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Username))
+        {
             return BadRequest(new { message = "Username is required." });
+        }
 
-        var jwtSettings = _configuration.GetSection("Jwt");
+        var jwtSettings = configuration.GetSection("Jwt");
         var secretKey = jwtSettings["SecretKey"]
             ?? throw new InvalidOperationException("JWT SecretKey not configured.");
 

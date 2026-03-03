@@ -9,22 +9,13 @@ namespace SrmCreditEngine.API.Middleware;
 /// Global exception handler middleware.
 /// Translates domain exceptions and unhandled errors to RFC 7807 Problem Details responses.
 /// </summary>
-public sealed class GlobalExceptionMiddleware
+public sealed class GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExceptionMiddleware> logger)
 {
-    private readonly RequestDelegate _next;
-    private readonly ILogger<GlobalExceptionMiddleware> _logger;
-
-    public GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExceptionMiddleware> logger)
-    {
-        _next = next;
-        _logger = logger;
-    }
-
     public async Task InvokeAsync(HttpContext context)
     {
         try
         {
-            await _next(context);
+            await next(context);
         }
         catch (Exception ex)
         {
@@ -57,11 +48,15 @@ public sealed class GlobalExceptionMiddleware
         };
 
         if (statusCode == HttpStatusCode.InternalServerError)
-            _logger.LogError(exception, "Unhandled exception for {Method} {Path}", 
+        {
+            logger.LogError(exception, "Unhandled exception for {Method} {Path}", 
                 context.Request.Method, context.Request.Path);
+        }
         else
-            _logger.LogWarning(exception, "Domain exception: {Code} for {Method} {Path}",
+        {
+            logger.LogWarning(exception, "Domain exception: {Code} for {Method} {Path}",
                 code, context.Request.Method, context.Request.Path);
+        }
 
         context.Response.StatusCode = (int)statusCode;
         context.Response.ContentType = "application/problem+json";

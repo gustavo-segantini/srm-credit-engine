@@ -46,7 +46,9 @@ try
                 outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext} {Message:lj}{NewLine}{Exception}");
 
         if (!string.IsNullOrEmpty(ctx.Configuration["Seq:ServerUrl"]))
+        {
             config.WriteTo.Seq(ctx.Configuration["Seq:ServerUrl"]!);
+        }
     });
 
     // ---------- Application Layers ----------
