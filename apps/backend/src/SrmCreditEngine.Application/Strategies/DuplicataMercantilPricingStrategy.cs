@@ -6,12 +6,12 @@ namespace SrmCreditEngine.Application.Strategies;
 
 /// <summary>
 /// Pricing strategy for Duplicata Mercantil.
-/// Spread: 3.0% a.m. (monthly) — Q1 performance review adjustment
-/// Formula: PV = FaceValue / (1 + BaseRate + 0.030)^TermInMonths
+/// Spread: 1.5% a.m. (monthly)
+/// Formula: PV = FaceValue / (1 + BaseRate + 0.015)^TermInMonths
 /// </summary>
 public sealed class DuplicataMercantilPricingStrategy : IPricingStrategy
 {
-    private const decimal SpreadMonthly = 0.030m; // 3.0% a.m. — Q1 adjustment
+    private const decimal SpreadMonthly = 0.015m; // 1.5% a.m.
 
     public ReceivableType SupportedType => ReceivableType.DuplicataMercantil;
 
