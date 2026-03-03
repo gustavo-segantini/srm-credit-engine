@@ -375,25 +375,25 @@ Branches criados neste projeto (visíveis no `git log --graph`):
 
 **Incidente simulado — 2026-02-26T20:00:00Z**
 
-Um bug crítico foi introduzido na branch `main` via commit `232435c`:
+Um bug crítico foi introduzido na branch `main` via commit `f6609d4`:
 
 ```diff
 - private const decimal SpreadMonthly = 0.015m; // 1.5% a.m.
-+ private const decimal SpreadMonthly = 0.0m; // BUG: spread zeroed
++ private const decimal SpreadMonthly = 0.030m; // 3.0% a.m. — Q1 adjustment
 ```
 
-**Impacto:** O fundo passou a precificar todas as Duplicatas Mercantis com spread **0%**, comprando recebíveis sem desconto — margem financeira zerada em todas as novas operações.
+**Impacto:** O spread dobrou de 1,5% para 3,0% sem aprovação do comitê de risco — todas as Duplicatas Mercantis passaram a ser precificadas com deságio excessivo, causando perda de competitividade operacional imediata.
 
 **Resolução:** Em vez de `git reset --hard` (que reescreve histórico público e causa `force push`), foi utilizado `git revert` para criar um commit de desfazimento auditável:
 
 ```bash
 # Identificar o commit culpado
 git log --oneline | grep "Q1 performance"
-# → 232435c feat(pricing): adjust duplicata spread for Q1 performance review
+# → f6609d4 feat(pricing): adjust duplicata spread for Q1 performance review
 
 # Reverter de forma segura (preserva histórico completo)
-git revert 232435c --no-edit
-# → dd8b6d3 Revert "feat(pricing): adjust duplicata spread..."
+git revert f6609d4 --no-edit
+# → 49debe3 Revert "feat(pricing): adjust duplicata spread for Q1 performance review"
 ```
 
 **Por que `git revert` e não `git reset`?**
@@ -406,10 +406,10 @@ git revert 232435c --no-edit
 O log final conta a história completa do incidente, preservando rastreabilidade para auditoria regulatória (FIDC/CVM):
 
 ```
-dd8b6d3  Revert "feat(pricing): adjust duplicata spread for Q1 performance review"
-232435c  feat(pricing): adjust duplicata spread for Q1 performance review  ← BUG
-b1914ea  chore: add frontend-level Husky symlink
-3490c71  Merge branch 'test/integration-tests'
+49debe3  Revert "feat(pricing): adjust duplicata spread for Q1 performance review"
+f6609d4  feat(pricing): adjust duplicata spread for Q1 performance review  ← BUG
+d875f7f  Merge branch 'docs/fix-diagrams-audit'
+02aea39  docs: fix diagrams and DDL after full codebase audit
 ...
 ```
 
@@ -419,7 +419,7 @@ b1914ea  chore: add frontend-level Husky symlink
 
 ```bash
 v1.0.0  ← entrega inicial (pricing engine, settlements, frontend)
-v1.0.1  ← hotfix: guard contra prazo ≤ 0 em ChequePredatado (cherry-pick para release/v1.0.x)
+v1.0.1  ← hotfix: guard contra prazo ≤ 0 em ChequePredatado (merged via --no-ff em release/v1.0.x → e5faaec)
 v1.1.0  ← JWT, Polly, CRUD Cedentes, Testcontainers, Vitest
 v1.2.0  ← IaC (Kubernetes/Kustomize), critérios de aceite (24 ACs BDD)
 ```
