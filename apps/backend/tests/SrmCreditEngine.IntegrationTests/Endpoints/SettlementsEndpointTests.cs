@@ -8,14 +8,9 @@ namespace SrmCreditEngine.IntegrationTests.Endpoints;
 /// <summary>
 /// Integration tests for POST /api/v1/settlements and GET /api/v1/settlements/{id}
 /// </summary>
-public sealed class SettlementsEndpointTests : IClassFixture<SrmCreditEngineFactory>
+public sealed class SettlementsEndpointTests(SrmCreditEngineFactory factory) : IClassFixture<SrmCreditEngineFactory>
 {
-    private readonly HttpClient _client;
-
-    public SettlementsEndpointTests(SrmCreditEngineFactory factory)
-    {
-        _client = factory.CreateClient();
-    }
+    private readonly HttpClient _client = factory.CreateClient();
 
     [Fact]
     public async Task CreateSettlement_WithoutToken_Returns401()

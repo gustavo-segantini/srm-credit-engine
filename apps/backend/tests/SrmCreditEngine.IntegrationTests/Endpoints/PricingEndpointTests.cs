@@ -8,14 +8,9 @@ namespace SrmCreditEngine.IntegrationTests.Endpoints;
 /// <summary>
 /// Integration tests for POST /api/v1/pricing/simulate
 /// </summary>
-public sealed class PricingEndpointTests : IClassFixture<SrmCreditEngineFactory>
+public sealed class PricingEndpointTests(SrmCreditEngineFactory factory) : IClassFixture<SrmCreditEngineFactory>
 {
-    private readonly HttpClient _client;
-
-    public PricingEndpointTests(SrmCreditEngineFactory factory)
-    {
-        _client = factory.CreateClient();
-    }
+    private readonly HttpClient _client = factory.CreateClient();
 
     [Fact]
     public async Task Simulate_WithoutToken_Returns401()

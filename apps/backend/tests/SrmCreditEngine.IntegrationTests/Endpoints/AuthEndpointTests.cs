@@ -8,14 +8,9 @@ namespace SrmCreditEngine.IntegrationTests.Endpoints;
 /// <summary>
 /// Integration tests for POST /api/v1/auth/token
 /// </summary>
-public sealed class AuthEndpointTests : IClassFixture<SrmCreditEngineFactory>
+public sealed class AuthEndpointTests(SrmCreditEngineFactory factory) : IClassFixture<SrmCreditEngineFactory>
 {
-    private readonly HttpClient _client;
-
-    public AuthEndpointTests(SrmCreditEngineFactory factory)
-    {
-        _client = factory.CreateClient();
-    }
+    private readonly HttpClient _client = factory.CreateClient();
 
     [Fact]
     public async Task Token_WithUsername_Returns200WithAccessToken()
